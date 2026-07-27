@@ -79,7 +79,7 @@ FEATURE_ORDER = [
     "Drivetrain", "Fuel_Efficiency", "Location"
 ]
 
-# Base currency multipliers relative to USD ($)
+# Currency rates relative to USD ($)
 CURRENCY_RATES = {
     "USD": {"symbol": "$", "rate": 1.0},
     "EUR": {"symbol": "€", "rate": 0.92},
@@ -87,21 +87,16 @@ CURRENCY_RATES = {
     "INR": {"symbol": "₹", "rate": 83.5}
 }
 
-def generate_insurance_recommendations(price, make_label, currency_code="USD"):
-    """Generate luxury insurance coverage proposals formatted with selected currency."""
-    curr = CURRENCY_RATES.get(currency_code, CURRENCY_RATES["USD"])
-    symbol = curr["symbol"]
-    rate = curr["rate"]
-    
-    converted_price = price * rate
+def generate_insurance_recommendations(price_usd, make_label):
+    """Generate dynamic insurance plan raw multiplier structures."""
     recommendations = []
     
-    if price > 35000 or make_label in ["BMW", "Mercedes-Benz", "Audi"]:
+    if price_usd > 35000 or make_label in ["BMW", "Mercedes-Benz", "Audi"]:
         recommendations.append({
             "title": "Titanium Sovereign Cover",
             "tier": "PLATINUM",
             "badge": "VIP Choice",
-            "price_est": f"{symbol}{int(converted_price * 0.042):,}/yr",
+            "annual_ratio": 0.042,
             "features": ["Zero Depreciation", "Full Engine & ECU Protection", "24/7 Global Concierge", "Guaranteed Invoice Value"],
             "match": "99% Precision Match"
         })
@@ -110,7 +105,7 @@ def generate_insurance_recommendations(price, make_label, currency_code="USD"):
         "title": "Apex Dynamic Shield",
         "tier": "EXECUTIVE",
         "badge": "Recommended",
-        "price_est": f"{symbol}{int(converted_price * 0.031):,}/yr",
+        "annual_ratio": 0.031,
         "features": ["All-Risk Collision Cover", "Third-Party Unlimited Liability", "Personal Driver Cover", "Cashless Repair Hubs"],
         "match": "94% Optimal Match"
     })
@@ -119,7 +114,7 @@ def generate_insurance_recommendations(price, make_label, currency_code="USD"):
         "title": "Metro Guard Select",
         "tier": "ESSENTIAL",
         "badge": "Smart Value",
-        "price_est": f"{symbol}{int(converted_price * 0.020):,}/yr",
+        "annual_ratio": 0.020,
         "features": ["Fire, Theft & Vandalism", "Emergency Towing & Key Lockout", "Basic Medical Assist"],
         "match": "88% Match"
     })
@@ -226,7 +221,6 @@ HTML_TEMPLATE = """
             overflow-x: hidden;
         }
 
-        /* Header Layout */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -315,7 +309,6 @@ HTML_TEMPLATE = """
         .dot-gold { background: #e5c158; }
         .dot-emerald { background: #10b981; }
 
-        /* Dashboard Container */
         .wrapper {
             margin-top: 85px;
             padding: 35px 40px;
@@ -345,7 +338,6 @@ HTML_TEMPLATE = """
             .header-bar { padding: 15px 20px; flex-direction: column; gap: 12px; }
         }
 
-        /* Glass Panels */
         .glass-panel {
             background: var(--bg-card);
             backdrop-filter: blur(20px);
@@ -464,6 +456,7 @@ HTML_TEMPLATE = """
             color: var(--accent);
             margin: 8px 0;
             text-shadow: 0 0 25px var(--accent-glow);
+            transition: transform 0.2s ease-in-out;
         }
 
         .status-pill {
@@ -558,15 +551,15 @@ HTML_TEMPLATE = """
                 <option value="ja">日本語</option>
             </select>
 
-            <!-- Currency Toggle -->
-            <select id="currSelect" class="control-select">
+            <!-- Real-Time Currency Switcher -->
+            <select id="currSelect" class="control-select" onchange="renderRealtimeCurrency()">
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
                 <option value="GBP">GBP (£)</option>
                 <option value="INR">INR (₹)</option>
             </select>
 
-            <!-- Multi-Theme Engine Selector -->
+            <!-- Multi-Theme Selector -->
             <div class="theme-switcher">
                 <div class="theme-dot dot-dark active" onclick="switchTheme('theme-dark', this)" title="Premium Dark"></div>
                 <div class="theme-dot dot-light" onclick="switchTheme('theme-light', this)" title="Premium Light"></div>
@@ -652,7 +645,12 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        // Language Dictionaries
+        // State storage for instant front-end conversions
+        let currentEvaluationUSD = 0;
+        let currentRecommendations = [];
+        const currencyRates = {{ currency_rates | tojson }};
+
+        // Multi-Language Translation Map
         const i18n = {
             en: {
                 title: "Executive Valuation & Telemetry",
@@ -756,6 +754,51 @@ HTML_TEMPLATE = """
             elem.classList.add('active');
         }
 
+        // Real-Time Instant Currency Converter for Evaluation Price and Plans
+        function renderRealtimeCurrency() {
+            if (currentEvaluationUSD === 0) return;
+
+            const selectedCurr = document.getElementById('currSelect').value;
+            const currencyObj = currencyRates[selectedCurr] || currencyRates["USD"];
+            const rate = currencyObj.rate;
+            const symbol = currencyObj.symbol;
+
+            // Update main evaluation price
+            const convertedVal = currentEvaluationUSD * rate;
+            const formattedPrice = symbol + convertedVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            const priceElem = document.getElementById('valPrice');
+            priceElem.style.transform = 'scale(1.08)';
+            priceElem.innerText = formattedPrice;
+            setTimeout(() => { priceElem.style.transform = 'scale(1)'; }, 200);
+
+            // Re-render insurance plans with converted prices
+            const container = document.getElementById('insuranceContainer');
+            container.innerHTML = '';
+
+            currentRecommendations.forEach(plan => {
+                const planConverted = convertedVal * plan.annual_ratio;
+                const planPriceFormatted = symbol + Math.round(planConverted).toLocaleString() + '/yr';
+
+                container.innerHTML += `
+                    <div class="plan-card" onclick="alert('Selected Plan: ${plan.title}')">
+                        <div>
+                            <div class="plan-header">
+                                <h4>${plan.title}</h4>
+                                <span class="badge-tier">${plan.badge}</span>
+                            </div>
+                            <div class="plan-meta">${plan.match} • Estimated Premium: <strong>${planPriceFormatted}</strong></div>
+                            <div class="plan-features">
+                                ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right" style="color: var(--text-sub);"></i>
+                    </div>
+                `;
+            });
+        }
+
+        // AJAX Prediction Request
         document.getElementById('valuationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -769,9 +812,6 @@ HTML_TEMPLATE = """
             const payload = {};
             formData.forEach((value, key) => { payload[key] = value; });
 
-            // Attach current currency selection to API payload
-            payload['currency'] = document.getElementById('currSelect').value;
-
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
@@ -782,33 +822,16 @@ HTML_TEMPLATE = """
                 const res = await response.json();
 
                 if (res.success) {
-                    document.getElementById('valPrice').innerText = res.formatted_price;
+                    currentEvaluationUSD = res.predicted_usd;
+                    currentRecommendations = res.recommendations;
+                    
                     document.getElementById('valStatus').innerText = dict.ready;
-
                     document.getElementById('mEfficiency').innerText = res.metrics.efficiency;
                     document.getElementById('mRisk').innerText = res.metrics.risk;
                     document.getElementById('mDep').innerText = res.metrics.depreciation;
 
-                    const container = document.getElementById('insuranceContainer');
-                    container.innerHTML = '';
-
-                    res.recommendations.forEach(plan => {
-                        container.innerHTML += `
-                            <div class="plan-card" onclick="alert('Selected Plan: ${plan.title}')">
-                                <div>
-                                    <div class="plan-header">
-                                        <h4>${plan.title}</h4>
-                                        <span class="badge-tier">${plan.badge}</span>
-                                    </div>
-                                    <div class="plan-meta">${plan.match} • Estimated Premium: <strong>${plan.price_est}</strong></div>
-                                    <div class="plan-features">
-                                        ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
-                                    </div>
-                                </div>
-                                <i class="fa-solid fa-chevron-right" style="color: var(--text-sub);"></i>
-                            </div>
-                        `;
-                    });
+                    // Instantly calculate and render in chosen currency
+                    renderRealtimeCurrency();
                 } else {
                     alert('Error: ' + res.error);
                 }
@@ -828,16 +851,16 @@ def index():
     return render_template_string(
         HTML_TEMPLATE,
         categorical_options=CATEGORICAL_OPTIONS,
-        default_numericals=DEFAULT_NUMERICALS
+        default_numericals=DEFAULT_NUMERICALS,
+        currency_rates=CURRENCY_RATES
     )
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.get_json()
-        currency_code = data.get("currency", "USD")
         
-        # Build DataFrame with numeric floats for model compatibility
+        # Build DataFrame with numeric floats for scikit-learn compatibility
         input_data = {}
         for col in FEATURE_ORDER:
             if col in CATEGORICAL_OPTIONS:
@@ -858,12 +881,7 @@ def predict():
                 (2026 - df_input["Year"].iloc[0]) * -900 + 22000
             )
 
-        # Currency Conversion
-        curr = CURRENCY_RATES.get(currency_code, CURRENCY_RATES["USD"])
-        converted_val = predicted_usd * curr["rate"]
-        formatted_price = f"{curr['symbol']}{converted_val:,.2f}"
-
-        # Category Name Lookup for Insurance & Telemetry Logic
+        # Lookup string category names for analysis logic
         make_code = str(data.get("Make", "0"))
         make_label = CAT_LOOKUP["Make"].get(make_code, "Toyota")
 
@@ -876,12 +894,11 @@ def predict():
         dep_risk = "Low" if mileage < 30000 else ("Moderate" if mileage < 75000 else "High")
         efficiency_tier = "A+" if float(data.get("Fuel_Efficiency", 16.8)) > 17.0 else "Standard"
 
-        recommendations = generate_insurance_recommendations(predicted_usd, make_label, currency_code)
+        recommendations = generate_insurance_recommendations(predicted_usd, make_label)
 
         return jsonify({
             "success": True,
             "predicted_usd": round(predicted_usd, 2),
-            "formatted_price": formatted_price,
             "metrics": {
                 "efficiency": efficiency_tier,
                 "risk": risk_level,
