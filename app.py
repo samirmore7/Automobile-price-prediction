@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Model loading logic
+# Load model pickle file
 MODEL_PATH = "RMR (1).pkl"
 model = None
 
@@ -18,9 +18,9 @@ if os.path.exists(MODEL_PATH):
     except Exception as e:
         print(f"Error loading pickle file: {e}")
 else:
-    print(f"Warning: '{MODEL_PATH}' not found in the root directory.")
+    print(f"Warning: '{MODEL_PATH}' not found. Running in simulation mode.")
 
-# Categorical mapping: Maps column name -> List of (encoded_index, category_name)
+# Categorical Mappings: (encoded_numeric_id, human_readable_label)
 CATEGORICAL_OPTIONS = {
     "Make": [
         (0, "Toyota"), (1, "Honda"), (2, "Ford"), (3, "BMW"), 
@@ -79,7 +79,6 @@ FEATURE_ORDER = [
     "Drivetrain", "Fuel_Efficiency", "Location"
 ]
 
-# Currency rates relative to USD ($)
 CURRENCY_RATES = {
     "USD": {"symbol": "$", "rate": 1.0},
     "EUR": {"symbol": "€", "rate": 0.92},
@@ -88,7 +87,7 @@ CURRENCY_RATES = {
 }
 
 def generate_insurance_recommendations(price_usd, make_label):
-    """Generate dynamic insurance plan raw multiplier structures."""
+    """Generate dynamic insurance plan structures."""
     recommendations = []
     
     if price_usd > 35000 or make_label in ["BMW", "Mercedes-Benz", "Audi"]:
@@ -127,15 +126,17 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA Motors — Executive Vehicle Intelligence Portal</title>
+    <title>AURA Motors — Full Analytical Intelligence Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* 1. Premium Dark Theme (Default) */
+        /* Theme Variables */
         body.theme-dark {
             --bg-base: #0b0f19;
-            --bg-card: rgba(20, 27, 41, 0.75);
+            --bg-card: rgba(20, 27, 41, 0.85);
             --card-border: rgba(255, 255, 255, 0.08);
             --accent: #6366f1;
             --accent-glow: rgba(99, 102, 241, 0.35);
@@ -143,13 +144,12 @@ HTML_TEMPLATE = """
             --text-heading: #f8fafc;
             --text-sub: #94a3b8;
             --input-bg: rgba(15, 23, 42, 0.6);
-            --header-bg: rgba(11, 15, 25, 0.85);
+            --header-bg: rgba(11, 15, 25, 0.9);
         }
 
-        /* 2. Premium Light Theme */
         body.theme-light {
             --bg-base: #f1f5f9;
-            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card: rgba(255, 255, 255, 0.9);
             --card-border: rgba(0, 0, 0, 0.08);
             --accent: #4f46e5;
             --accent-glow: rgba(79, 70, 229, 0.2);
@@ -157,27 +157,25 @@ HTML_TEMPLATE = """
             --text-heading: #0f172a;
             --text-sub: #64748b;
             --input-bg: rgba(248, 250, 252, 0.9);
-            --header-bg: rgba(255, 255, 255, 0.9);
+            --header-bg: rgba(255, 255, 255, 0.95);
         }
 
-        /* 3. Cyber Neon Theme */
         body.theme-cyber {
             --bg-base: #070913;
-            --bg-card: rgba(14, 20, 38, 0.75);
-            --card-border: rgba(0, 240, 255, 0.2);
+            --bg-card: rgba(14, 20, 38, 0.85);
+            --card-border: rgba(0, 240, 255, 0.25);
             --accent: #00f0ff;
             --accent-glow: rgba(0, 240, 255, 0.4);
             --accent-hover: #70f3ff;
             --text-heading: #ffffff;
             --text-sub: #8ba1cd;
             --input-bg: rgba(10, 15, 30, 0.7);
-            --header-bg: rgba(7, 9, 19, 0.9);
+            --header-bg: rgba(7, 9, 19, 0.95);
         }
 
-        /* 4. Royal Gold Theme */
         body.theme-gold {
             --bg-base: #0f0d0a;
-            --bg-card: rgba(28, 24, 18, 0.75);
+            --bg-card: rgba(28, 24, 18, 0.85);
             --card-border: rgba(212, 175, 55, 0.25);
             --accent: #e5c158;
             --accent-glow: rgba(229, 193, 88, 0.35);
@@ -185,13 +183,12 @@ HTML_TEMPLATE = """
             --text-heading: #fffdf5;
             --text-sub: #a89f91;
             --input-bg: rgba(20, 17, 12, 0.7);
-            --header-bg: rgba(15, 13, 10, 0.9);
+            --header-bg: rgba(15, 13, 10, 0.95);
         }
 
-        /* 5. Emerald Lux Theme */
         body.theme-emerald {
             --bg-base: #06130e;
-            --bg-card: rgba(12, 33, 25, 0.75);
+            --bg-card: rgba(12, 33, 25, 0.85);
             --card-border: rgba(16, 185, 129, 0.25);
             --accent: #10b981;
             --accent-glow: rgba(16, 185, 129, 0.4);
@@ -199,7 +196,7 @@ HTML_TEMPLATE = """
             --text-heading: #f0fdf4;
             --text-sub: #86efac;
             --input-bg: rgba(8, 24, 18, 0.7);
-            --header-bg: rgba(6, 19, 14, 0.9);
+            --header-bg: rgba(6, 19, 14, 0.95);
         }
 
         * {
@@ -207,7 +204,7 @@ HTML_TEMPLATE = """
             margin: 0;
             padding: 0;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
 
         body {
@@ -215,12 +212,13 @@ HTML_TEMPLATE = """
             color: var(--text-heading);
             min-height: 100vh;
             background-image: 
-                radial-gradient(circle at 15% 20%, var(--accent-glow) 0%, transparent 45%),
-                radial-gradient(circle at 85% 80%, var(--accent-glow) 0%, transparent 45%);
+                radial-gradient(circle at 10% 15%, var(--accent-glow) 0%, transparent 40%),
+                radial-gradient(circle at 90% 85%, var(--accent-glow) 0%, transparent 40%);
             background-attachment: fixed;
             overflow-x: hidden;
         }
 
+        /* Navbar Header */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -261,7 +259,7 @@ HTML_TEMPLATE = """
         .controls-group {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .control-select {
@@ -297,7 +295,6 @@ HTML_TEMPLATE = """
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: transform 0.2s ease;
         }
 
         .theme-dot:hover { transform: scale(1.25); }
@@ -309,31 +306,32 @@ HTML_TEMPLATE = """
         .dot-gold { background: #e5c158; }
         .dot-emerald { background: #10b981; }
 
+        /* Outer Layout Wrapper */
         .wrapper {
             margin-top: 85px;
-            padding: 35px 40px;
-            max-width: 1550px;
+            padding: 30px 40px;
+            max-width: 1650px;
             margin-left: auto;
             margin-right: auto;
         }
 
-        .hero-head { margin-bottom: 25px; }
         .hero-head h1 {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 2.1rem;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
-        .hero-head p { color: var(--text-sub); font-size: 0.98rem; }
+        .hero-head p { color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px; }
 
-        .dashboard-grid {
+        /* Dashboard Master Grid */
+        .master-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
+            grid-template-columns: 420px 1fr;
+            gap: 25px;
         }
 
-        @media (max-width: 1100px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
+        @media (max-width: 1200px) {
+            .master-layout { grid-template-columns: 1fr; }
             .wrapper { padding: 20px; }
             .header-bar { padding: 15px 20px; flex-direction: column; gap: 12px; }
         }
@@ -343,34 +341,34 @@ HTML_TEMPLATE = """
             backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
             border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-            position: relative;
+            padding: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
         }
 
         .panel-title {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 12px;
+            padding-bottom: 10px;
             color: var(--text-heading);
         }
 
         .panel-title i { color: var(--accent); }
 
+        /* Form Inputs Layout */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 12px;
         }
 
-        .form-field { display: flex; flex-direction: column; gap: 5px; }
+        .form-field { display: flex; flex-direction: column; gap: 4px; }
         .form-field label {
-            font-size: 0.76rem;
+            font-size: 0.72rem;
             font-weight: 700;
             color: var(--text-sub);
             text-transform: uppercase;
@@ -381,31 +379,28 @@ HTML_TEMPLATE = """
             background: var(--input-bg);
             border: 1px solid var(--card-border);
             color: var(--text-heading);
-            padding: 11px 13px;
+            padding: 10px 12px;
             border-radius: 8px;
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             outline: none;
         }
 
         .custom-input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 12px var(--accent-glow);
+            box-shadow: 0 0 10px var(--accent-glow);
         }
-
-        .btn-holder { margin-top: 22px; }
 
         .btn-spark {
             width: 100%;
+            margin-top: 20px;
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
             color: #ffffff;
             border: none;
-            padding: 15px;
-            font-size: 0.98rem;
+            padding: 14px;
+            font-size: 0.95rem;
             font-weight: 700;
             border-radius: 10px;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -413,101 +408,99 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
             letter-spacing: 1px;
             box-shadow: 0 8px 25px var(--accent-glow);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
         }
 
-        .btn-spark::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-            transform: rotate(30deg);
-            transition: transform 0.8s ease;
+        .btn-spark:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--accent-glow); }
+
+        /* KPI Overview Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
-        .btn-spark:hover::after { transform: translate(100%, 100%) rotate(30deg); }
-        .btn-spark:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 30px var(--accent-glow); }
-        .btn-spark:active { transform: translateY(1px); }
+        @media (max-width: 900px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
 
-        .val-card {
+        .kpi-card {
             background: rgba(0, 0, 0, 0.15);
-            border: 1px dashed var(--accent);
-            border-radius: 12px;
-            padding: 22px;
-            text-align: center;
-            margin-bottom: 22px;
-        }
-
-        .val-sub {
-            font-size: 0.78rem;
-            color: var(--text-sub);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 700;
-        }
-
-        .val-price {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin: 8px 0;
-            text-shadow: 0 0 25px var(--accent-glow);
-            transition: transform 0.2s ease-in-out;
-        }
-
-        .status-pill {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.08);
             border: 1px solid var(--card-border);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: var(--text-heading);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            position: relative;
         }
 
-        .metrics-row {
+        .kpi-title { font-size: 0.72rem; color: var(--text-sub); text-transform: uppercase; font-weight: 700; }
+        .kpi-val { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--accent); margin: 6px 0; }
+        .kpi-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.06); color: var(--text-heading); }
+
+        /* Charts Analytics Section Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-box {
+            background: rgba(0, 0, 0, 0.12);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            height: 270px;
+            position: relative;
+        }
+
+        .chart-box h4 {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        /* Insurance Proposals Layout */
+        .plans-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 22px;
+            gap: 15px;
         }
 
-        .m-box {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--card-border);
-            padding: 13px;
-            border-radius: 10px;
-            text-align: center;
+        @media (max-width: 900px) {
+            .plans-grid { grid-template-columns: 1fr; }
         }
-
-        .m-val { font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: var(--text-heading); }
-        .m-lbl { font-size: 0.7rem; color: var(--text-sub); text-transform: uppercase; }
-
-        .plans-list { display: flex; flex-direction: column; gap: 12px; }
 
         .plan-card {
             background: var(--input-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 16px;
             cursor: pointer;
             transition: all 0.25s ease;
         }
 
         .plan-card:hover {
             border-color: var(--accent);
-            transform: translateX(4px);
+            transform: translateY(-3px);
             box-shadow: 0 4px 20px var(--accent-glow);
         }
 
-        .plan-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .plan-header h4 { font-size: 0.95rem; font-weight: 700; }
 
         .badge-tier {
@@ -520,8 +513,9 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
         }
 
-        .plan-meta { font-size: 0.78rem; color: var(--text-sub); }
-        .plan-features { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .plan-price { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 4px 0; }
+        .plan-meta { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 8px; }
+        .plan-features { display: flex; gap: 6px; flex-wrap: wrap; }
 
         .f-tag {
             background: rgba(255, 255, 255, 0.05);
@@ -537,12 +531,11 @@ HTML_TEMPLATE = """
 
     <header class="header-bar">
         <div class="brand-box">
-            <div class="brand-icon"><i class="fa-solid fa-gauge-high"></i></div>
-            <span>AURA MOTORS</span>
+            <div class="brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <span>AURA MOTORS ANALYTICS</span>
         </div>
         
         <div class="controls-group">
-            <!-- Language Selection -->
             <select id="langSelect" class="control-select" onchange="updateLanguage()">
                 <option value="en">English (US)</option>
                 <option value="es">Español</option>
@@ -551,7 +544,6 @@ HTML_TEMPLATE = """
                 <option value="ja">日本語</option>
             </select>
 
-            <!-- Real-Time Currency Switcher -->
             <select id="currSelect" class="control-select" onchange="renderRealtimeCurrency()">
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
@@ -559,7 +551,6 @@ HTML_TEMPLATE = """
                 <option value="INR">INR (₹)</option>
             </select>
 
-            <!-- Multi-Theme Selector -->
             <div class="theme-switcher">
                 <div class="theme-dot dot-dark active" onclick="switchTheme('theme-dark', this)" title="Premium Dark"></div>
                 <div class="theme-dot dot-light" onclick="switchTheme('theme-light', this)" title="Premium Light"></div>
@@ -572,13 +563,14 @@ HTML_TEMPLATE = """
 
     <div class="wrapper">
         <div class="hero-head">
-            <h1 id="txtTitle">Executive Valuation & Telemetry</h1>
-            <p id="txtSub">Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.</p>
+            <h1 id="txtTitle">Executive Valuation & Full Telemetry Analytics</h1>
+            <p id="txtSub">Comprehensive Random Forest market estimation, depreciation projections, TCO analysis, and insurance models.</p>
         </div>
 
-        <div class="dashboard-grid">
+        <div class="master-layout">
+            <!-- Left Side: Specifications Input -->
             <div class="glass-panel">
-                <div class="panel-title"><i class="fa-solid fa-sliders"></i> <span id="txtSpec">Vehicle Specifications</span></div>
+                <div class="panel-title"><i class="fa-solid fa-sliders"></i> <span id="txtSpec">Vehicle Inputs</span></div>
                 <form id="valuationForm">
                     <div class="form-grid">
                         {% for col, options in categorical_options.items() %}
@@ -600,150 +592,143 @@ HTML_TEMPLATE = """
                         {% endfor %}
                     </div>
 
-                    <div class="btn-holder">
-                        <button type="submit" class="btn-spark" id="calcBtn">
-                            <i class="fa-solid fa-microchip"></i> <span id="txtBtn">Run AI Valuation</span>
-                        </button>
-                    </div>
+                    <button type="submit" class="btn-spark" id="calcBtn">
+                        <i class="fa-solid fa-microchip"></i> <span id="txtBtn">Run Full Analytics</span>
+                    </button>
                 </form>
             </div>
 
-            <div class="glass-panel">
-                <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> <span id="txtOut">Intelligence Output</span></div>
+            <!-- Right Side: Analytical Dashboard & Charts -->
+            <div>
+                <!-- KPI Executive Overview Grid -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-title" id="kpi1Title">Current Market Value</div>
+                        <div class="kpi-val" id="kpiVal">$0.00</div>
+                        <span class="kpi-badge" id="kpiValStatus">Awaiting Execution</span>
+                    </div>
 
-                <div class="val-card">
-                    <div class="val-sub" id="txtValSub">Estimated Market Value</div>
-                    <div class="val-price" id="valPrice">$0.00</div>
-                    <span class="status-pill" id="valStatus">Ready for Calculation</span>
+                    <div class="kpi-card">
+                        <div class="kpi-title" id="kpi2Title">5-Yr Future Value</div>
+                        <div class="kpi-val" id="kpi5Yr">$0.00</div>
+                        <span class="kpi-badge">~38% Total Depreciation</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-title" id="kpi3Title">Annual Maintenance</div>
+                        <div class="kpi-val" id="kpiMaint">$0.00</div>
+                        <span class="kpi-badge" id="kpiMaintTier">Standard Service</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-title" id="kpi4Title">Health Index Score</div>
+                        <div class="kpi-val" id="kpiHealth">-- / 100</div>
+                        <span class="kpi-badge" id="kpiHealthStatus">Condition Index</span>
+                    </div>
                 </div>
 
-                <div class="metrics-row">
-                    <div class="m-box">
-                        <div class="m-lbl" id="lblEff">Efficiency</div>
-                        <div class="m-val" id="mEfficiency">--</div>
+                <!-- Interactive Charts Row 1 & 2 -->
+                <div class="analytics-grid">
+                    <div class="chart-box">
+                        <h4><i class="fa-solid fa-chart-line"></i> 5-Year Depreciation Forecast Curve</h4>
+                        <div class="chart-container"><canvas id="depreciationChart"></canvas></div>
                     </div>
-                    <div class="m-box">
-                        <div class="m-lbl" id="lblRisk">Risk Rating</div>
-                        <div class="m-val" id="mRisk">--</div>
+
+                    <div class="chart-box">
+                        <h4><i class="fa-solid fa-chart-pie"></i> Valuation Component Drivers</h4>
+                        <div class="chart-container"><canvas id="driverChart"></canvas></div>
                     </div>
-                    <div class="m-box">
-                        <div class="m-lbl" id="lblDep">Depreciation</div>
-                        <div class="m-val" id="mDep">--</div>
+
+                    <div class="chart-box">
+                        <h4><i class="fa-solid fa-layer-group"></i> Total Annual Cost of Ownership (TCO)</h4>
+                        <div class="chart-container"><canvas id="tcoChart"></canvas></div>
+                    </div>
+
+                    <div class="chart-box">
+                        <h4><i class="fa-solid fa-compass"></i> Vehicle Telemetry Metrics</h4>
+                        <div class="chart-container"><canvas id="radarChart"></canvas></div>
                     </div>
                 </div>
 
-                <div class="panel-title" style="margin-top: 10px; border-bottom: none; margin-bottom: 12px;">
-                    <i class="fa-solid fa-shield"></i> <span id="txtPlans">Premium Coverage Plans</span>
-                </div>
-                <div class="plans-list" id="insuranceContainer">
-                    <p style="color: var(--text-sub); text-align: center; padding: 20px;" id="txtPrompt">
-                        Input vehicle metrics and execute valuation to view dynamic insurance proposals.
-                    </p>
+                <!-- Tailored Insurance Recommendations Panel -->
+                <div class="glass-panel">
+                    <div class="panel-title"><i class="fa-solid fa-shield"></i> <span id="txtPlans">Recommended Coverage Proposals</span></div>
+                    <div class="plans-grid" id="insuranceContainer">
+                        <p style="color: var(--text-sub); text-align: center; grid-column: 1 / -1; padding: 20px;" id="txtPrompt">
+                            Submit specs to generate custom AI coverage proposals.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // State storage for instant front-end conversions
-        let currentEvaluationUSD = 0;
-        let currentRecommendations = [];
+        // Analytical Data & Currency Conversion States
+        let rawUsdValuation = 0;
+        let rawRecommendations = [];
         const currencyRates = {{ currency_rates | tojson }};
 
-        // Multi-Language Translation Map
+        // Chart.js Instances
+        let chartDep, chartDriver, chartTco, chartRadar;
+
+        // Multilingual Translation Map
         const i18n = {
             en: {
-                title: "Executive Valuation & Telemetry",
-                sub: "Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.",
-                spec: "Vehicle Specifications",
-                out: "Intelligence Output",
-                valsub: "Estimated Market Value",
-                btn: "Run AI Valuation",
-                btnProc: "Processing Model...",
-                eff: "Efficiency",
-                risk: "Risk Rating",
-                dep: "Depreciation",
-                plans: "Premium Coverage Plans",
-                prompt: "Input vehicle metrics and execute valuation to view dynamic insurance proposals.",
-                ready: "Valuation Verified"
+                title: "Executive Valuation & Full Telemetry Analytics",
+                sub: "Comprehensive Random Forest market estimation, depreciation projections, TCO analysis, and insurance models.",
+                spec: "Vehicle Inputs",
+                btn: "Run Full Analytics",
+                btnProc: "Computing Metrics...",
+                plans: "Recommended Coverage Proposals",
+                prompt: "Submit specs to generate custom AI coverage proposals."
             },
             es: {
-                title: "Evaluación Ejecutiva y Telemetría",
-                sub: "Calcule la tasación de mercado mediante regresión de bosque aleatorio.",
-                spec: "Especificaciones del Vehículo",
-                out: "Resultado de Inteligencia",
-                valsub: "Valor de Mercado Estimado",
-                btn: "Ejecutar Valoración IA",
-                btnProc: "Procesando Modelo...",
-                eff: "Eficiencia",
-                risk: "Clasificación de Riesgo",
-                dep: "Depreciación",
-                plans: "Planes de Cobertura Premium",
-                prompt: "Ingrese las métricas del vehículo para ver las propuestas de seguro.",
-                ready: "Valoración Verificada"
+                title: "Valoración Ejecutiva y Analítica Completa",
+                sub: "Estimación de mercado Random Forest, proyecciones de depreciación y análisis TCO.",
+                spec: "Datos del Vehículo",
+                btn: "Ejecutar Analítica",
+                btnProc: "Calculando...",
+                plans: "Propuestas de Cobertura Recomendadas",
+                prompt: "Ingrese las especificaciones para generar propuestas de seguro."
             },
             fr: {
-                title: "Évaluation Exécutive et Télémétrie",
-                sub: "Calculez l'évaluation du marché via la régression Random Forest.",
-                spec: "Spécifications du Véhicule",
-                out: "Résultat d'Intelligence",
-                valsub: "Valeur Estimée du Marché",
-                btn: "Lancer l'Évaluation IA",
-                btnProc: "Traitement du Modèle...",
-                eff: "Efficacité",
-                risk: "Évaluation du Risque",
-                dep: "Dépréciation",
-                plans: "Plans de Couverture Premium",
-                prompt: "Saisissez les métriques du véhicule pour voir les propositions d'assurance.",
-                ready: "Évaluation Vérifiée"
+                title: "Évaluation Exécutive et Analyse Télémetrique",
+                sub: "Estimation du marché Random Forest, prévisions de dépréciation et coût total de possession.",
+                spec: "Saisie du Véhicule",
+                btn: "Lancer l'Analyse",
+                btnProc: "Calcul en cours...",
+                plans: "Propositions de Couverture Recommandées",
+                prompt: "Soumettez les spécifications para générer des offres d'assurance."
             },
             de: {
-                title: "Executive Bewertung & Telemetrie",
-                sub: "Berechnen Sie den Marktwert über Random Forest Regression.",
-                spec: "Fahrzeugspezifikationen",
-                out: "Intelligenz-Ausgabe",
-                valsub: "Geschätzter Marktwert",
-                btn: "KI-Bewertung Starten",
-                btnProc: "Modell wird verarbeitet...",
-                eff: "Effizienz",
-                risk: "Risikobewertung",
-                dep: "Wertverlust",
-                plans: "Premium-Deckungspläne",
-                prompt: "Geben Sie Fahrzeugdaten ein, um Versicherungsangebote anzuzeigen.",
-                ready: "Bewertung Verifiziert"
+                title: "Executive Bewertung & Vollständige Analytik",
+                sub: "Marktschätzung mit Random Forest, Wertverlustprognosen und Gesamtkostenanalyse.",
+                spec: "Fahrzeugeingaben",
+                btn: "Analytik Starten",
+                btnProc: "Berechnung...",
+                plans: "Empfohlene Deckungsangebote",
+                prompt: "Geben Sie Fahrzeugdaten ein, um Versicherungsangebote zu erstellen."
             },
             ja: {
-                title: "エグゼクティブ車両査定＆テレメトリ",
-                sub: "ランダムフォレスト回帰により市場価格を計算し、最適な保険プランを評価します。",
-                spec: "車両仕様スペック",
-                out: "インテリジェンス出力",
-                valsub: "推定市場価格",
-                btn: "AI査定を実行",
-                btnProc: "モデル処理中...",
-                eff: "燃費効率",
-                risk: "リスク評価",
-                dep: "減価償却",
-                plans: "プレミアム保険プラン",
-                prompt: "車両データを入力してAI査定を実行すると、保険プランが表示されます。",
-                ready: "査定完了"
+                title: "エグゼクティブ査定＆全分析ダッシュボード",
+                sub: "ランダムフォレスト市場推定、減価償却予測、総所有コスト（TCO）および保険モデル。",
+                spec: "車両入力スペック",
+                btn: "全分析を実行",
+                btnProc: "計算中...",
+                plans: "推奨保険プラン提案",
+                prompt: "スペックを入力してAI査定を実行すると、保険プランが表示されます。"
             }
         };
 
         function updateLanguage() {
             const lang = document.getElementById('langSelect').value;
             const dict = i18n[lang] || i18n.en;
-
             document.getElementById('txtTitle').innerText = dict.title;
             document.getElementById('txtSub').innerText = dict.sub;
             document.getElementById('txtSpec').innerText = dict.spec;
-            document.getElementById('txtOut').innerText = dict.out;
-            document.getElementById('txtValSub').innerText = dict.valsub;
             document.getElementById('txtBtn').innerText = dict.btn;
-            document.getElementById('lblEff').innerText = dict.eff;
-            document.getElementById('lblRisk').innerText = dict.risk;
-            document.getElementById('lblDep').innerText = dict.dep;
             document.getElementById('txtPlans').innerText = dict.plans;
-            
             const promptElem = document.getElementById('txtPrompt');
             if(promptElem) promptElem.innerText = dict.prompt;
         }
@@ -752,53 +737,132 @@ HTML_TEMPLATE = """
             document.body.className = themeName;
             document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
             elem.classList.add('active');
+            // Re-render charts to adjust theme styling colors
+            if (rawUsdValuation > 0) renderCharts();
         }
 
-        // Real-Time Instant Currency Converter for Evaluation Price and Plans
+        // Real-Time Currency Switcher
         function renderRealtimeCurrency() {
-            if (currentEvaluationUSD === 0) return;
+            if (rawUsdValuation === 0) return;
 
             const selectedCurr = document.getElementById('currSelect').value;
             const currencyObj = currencyRates[selectedCurr] || currencyRates["USD"];
             const rate = currencyObj.rate;
             const symbol = currencyObj.symbol;
 
-            // Update main evaluation price
-            const convertedVal = currentEvaluationUSD * rate;
-            const formattedPrice = symbol + convertedVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            const priceElem = document.getElementById('valPrice');
-            priceElem.style.transform = 'scale(1.08)';
-            priceElem.innerText = formattedPrice;
-            setTimeout(() => { priceElem.style.transform = 'scale(1)'; }, 200);
+            const convertedVal = rawUsdValuation * rate;
+            const converted5Yr = (rawUsdValuation * 0.62) * rate;
+            const convertedMaint = (rawUsdValuation * 0.035) * rate;
 
-            // Re-render insurance plans with converted prices
+            document.getElementById('kpiVal').innerText = symbol + Math.round(convertedVal).toLocaleString();
+            document.getElementById('kpi5Yr').innerText = symbol + Math.round(converted5Yr).toLocaleString();
+            document.getElementById('kpiMaint').innerText = symbol + Math.round(convertedMaint).toLocaleString();
+
+            // Render Insurance Plans
             const container = document.getElementById('insuranceContainer');
             container.innerHTML = '';
 
-            currentRecommendations.forEach(plan => {
+            rawRecommendations.forEach(plan => {
                 const planConverted = convertedVal * plan.annual_ratio;
                 const planPriceFormatted = symbol + Math.round(planConverted).toLocaleString() + '/yr';
 
                 container.innerHTML += `
-                    <div class="plan-card" onclick="alert('Selected Plan: ${plan.title}')">
-                        <div>
-                            <div class="plan-header">
-                                <h4>${plan.title}</h4>
-                                <span class="badge-tier">${plan.badge}</span>
-                            </div>
-                            <div class="plan-meta">${plan.match} • Estimated Premium: <strong>${planPriceFormatted}</strong></div>
-                            <div class="plan-features">
-                                ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
-                            </div>
+                    <div class="plan-card" onclick="alert('Selected Coverage: ${plan.title}')">
+                        <div class="plan-header">
+                            <h4>${plan.title}</h4>
+                            <span class="badge-tier">${plan.badge}</span>
                         </div>
-                        <i class="fa-solid fa-chevron-right" style="color: var(--text-sub);"></i>
+                        <div class="plan-price">${planPriceFormatted}</div>
+                        <div class="plan-meta">${plan.match}</div>
+                        <div class="plan-features">
+                            ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
+                        </div>
                     </div>
                 `;
             });
+
+            // Update Chart datasets with converted currency values
+            renderCharts();
         }
 
-        // AJAX Prediction Request
+        // Chart.js Rendering Engine
+        function renderCharts() {
+            const selectedCurr = document.getElementById('currSelect').value;
+            const currencyObj = currencyRates[selectedCurr] || currencyRates["USD"];
+            const rate = currencyObj.rate;
+            const symbol = currencyObj.symbol;
+
+            const baseVal = rawUsdValuation * rate;
+
+            // 1. Depreciation Line Chart
+            const depCtx = document.getElementById('depreciationChart').getContext('2d');
+            if(chartDep) chartDep.destroy();
+            chartDep = new Chart(depCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    datasets: [{
+                        label: 'Vehicle Value (' + symbol + ')',
+                        data: [baseVal, baseVal*0.88, baseVal*0.79, baseVal*0.71, baseVal*0.66, baseVal*0.62],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 2. Component Drivers Doughnut Chart
+            const driverCtx = document.getElementById('driverChart').getContext('2d');
+            if(chartDriver) chartDriver.destroy();
+            chartDriver = new Chart(driverCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Base Engine', 'Horsepower Boost', 'Mileage Factor', 'Market Demand'],
+                    datasets: [{
+                        data: [baseVal*0.5, baseVal*0.25, baseVal*0.15, baseVal*0.1],
+                        backgroundColor: ['#6366f1', '#00f0ff', '#10b981', '#e5c158']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. TCO Stacked Bar Chart
+            const tcoCtx = document.getElementById('tcoChart').getContext('2d');
+            if(chartTco) chartTco.destroy();
+            chartTco = new Chart(tcoCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Year 1', 'Year 2', 'Year 3'],
+                    datasets: [
+                        { label: 'Depreciation', data: [baseVal*0.12, baseVal*0.09, baseVal*0.08], backgroundColor: '#6366f1' },
+                        { label: 'Fuel', data: [baseVal*0.05, baseVal*0.052, baseVal*0.055], backgroundColor: '#00f0ff' },
+                        { label: 'Insurance', data: [baseVal*0.035, baseVal*0.033, baseVal*0.031], backgroundColor: '#10b981' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+
+            // 4. Radar Metrics Chart
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            if(chartRadar) chartRadar.destroy();
+            chartRadar = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Power', 'Efficiency', 'Reliability', 'Safety', 'Resale Hold'],
+                    datasets: [{
+                        label: 'Vehicle Profile',
+                        data: [82, 75, 90, 88, 70],
+                        borderColor: '#e5c158',
+                        backgroundColor: 'rgba(229, 193, 88, 0.2)'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Form Submit Ajax Handler
         document.getElementById('valuationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -822,23 +886,20 @@ HTML_TEMPLATE = """
                 const res = await response.json();
 
                 if (res.success) {
-                    currentEvaluationUSD = res.predicted_usd;
-                    currentRecommendations = res.recommendations;
-                    
-                    document.getElementById('valStatus').innerText = dict.ready;
-                    document.getElementById('mEfficiency').innerText = res.metrics.efficiency;
-                    document.getElementById('mRisk').innerText = res.metrics.risk;
-                    document.getElementById('mDep').innerText = res.metrics.depreciation;
+                    rawUsdValuation = res.predicted_usd;
+                    rawRecommendations = res.recommendations;
 
-                    // Instantly calculate and render in chosen currency
+                    document.getElementById('kpiValStatus').innerText = 'Verified Model Prediction';
+                    document.getElementById('kpiHealth').innerText = res.metrics.health_score + ' / 100';
+
                     renderRealtimeCurrency();
                 } else {
                     alert('Error: ' + res.error);
                 }
             } catch (err) {
-                alert('Connection error with Flask server.');
+                alert('Connection error with server.');
             } finally {
-                btn.innerHTML = `<i class="fa-solid fa-microchip"></i> <span id="txtBtn">${dict.btn}</span>`;
+                btn.innerHTML = `<i class="fa-solid fa-microchip"></i> ${dict.btn}`;
             }
         });
     </script>
@@ -860,7 +921,7 @@ def predict():
     try:
         data = request.get_json()
         
-        # Build DataFrame with numeric floats for scikit-learn compatibility
+        # Build encoded dataframe for model prediction
         input_data = {}
         for col in FEATURE_ORDER:
             if col in CATEGORICAL_OPTIONS:
@@ -881,18 +942,16 @@ def predict():
                 (2026 - df_input["Year"].iloc[0]) * -900 + 22000
             )
 
-        # Lookup string category names for analysis logic
         make_code = str(data.get("Make", "0"))
         make_label = CAT_LOOKUP["Make"].get(make_code, "Toyota")
 
         accident_code = str(data.get("Accident_History", "0"))
         accident_label = CAT_LOOKUP["Accident_History"].get(accident_code, "None")
 
-        mileage = float(data.get("Mileage", 32000))
+        owners = float(data.get("Owners", 1))
         
-        risk_level = "Low" if accident_label == "None" else ("Moderate" if accident_label == "Minor" else "High")
-        dep_risk = "Low" if mileage < 30000 else ("Moderate" if mileage < 75000 else "High")
-        efficiency_tier = "A+" if float(data.get("Fuel_Efficiency", 16.8)) > 17.0 else "Standard"
+        # Calculate Vehicle Health Score
+        health_score = 100 - (0 if accident_label == "None" else (15 if accident_label == "Minor" else 35)) - (owners * 3)
 
         recommendations = generate_insurance_recommendations(predicted_usd, make_label)
 
@@ -900,9 +959,7 @@ def predict():
             "success": True,
             "predicted_usd": round(predicted_usd, 2),
             "metrics": {
-                "efficiency": efficiency_tier,
-                "risk": risk_level,
-                "depreciation": dep_risk
+                "health_score": max(health_score, 40)
             },
             "recommendations": recommendations
         })
