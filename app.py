@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Model loading setup using the exact pickle filename
+# Model loading logic
 MODEL_PATH = "RMR (1).pkl"
 model = None
 
@@ -20,7 +20,7 @@ if os.path.exists(MODEL_PATH):
 else:
     print(f"Warning: '{MODEL_PATH}' not found in the root directory.")
 
-# User-facing categorical dictionary: Maps column name -> List of (encoded_index, category_name)
+# Categorical mapping: Maps column name -> List of (encoded_index, category_name)
 CATEGORICAL_OPTIONS = {
     "Make": [
         (0, "Toyota"), (1, "Honda"), (2, "Ford"), (3, "BMW"), 
@@ -57,7 +57,6 @@ CATEGORICAL_OPTIONS = {
     ]
 }
 
-# Quick lookup helper to translate encoded ID back to string name when needed
 CAT_LOOKUP = {
     col: {str(code): label for code, label in options}
     for col, options in CATEGORICAL_OPTIONS.items()
@@ -80,8 +79,21 @@ FEATURE_ORDER = [
     "Drivetrain", "Fuel_Efficiency", "Location"
 ]
 
-def generate_insurance_recommendations(price, make_label):
-    """Generate luxury insurance proposals using estimated valuation and vehicle make string."""
+# Base currency multipliers relative to USD ($)
+CURRENCY_RATES = {
+    "USD": {"symbol": "$", "rate": 1.0},
+    "EUR": {"symbol": "€", "rate": 0.92},
+    "GBP": {"symbol": "£", "rate": 0.78},
+    "INR": {"symbol": "₹", "rate": 83.5}
+}
+
+def generate_insurance_recommendations(price, make_label, currency_code="USD"):
+    """Generate luxury insurance coverage proposals formatted with selected currency."""
+    curr = CURRENCY_RATES.get(currency_code, CURRENCY_RATES["USD"])
+    symbol = curr["symbol"]
+    rate = curr["rate"]
+    
+    converted_price = price * rate
     recommendations = []
     
     if price > 35000 or make_label in ["BMW", "Mercedes-Benz", "Audi"]:
@@ -89,7 +101,7 @@ def generate_insurance_recommendations(price, make_label):
             "title": "Titanium Sovereign Cover",
             "tier": "PLATINUM",
             "badge": "VIP Choice",
-            "price_est": f"${int(price * 0.042)}/yr",
+            "price_est": f"{symbol}{int(converted_price * 0.042):,}/yr",
             "features": ["Zero Depreciation", "Full Engine & ECU Protection", "24/7 Global Concierge", "Guaranteed Invoice Value"],
             "match": "99% Precision Match"
         })
@@ -98,7 +110,7 @@ def generate_insurance_recommendations(price, make_label):
         "title": "Apex Dynamic Shield",
         "tier": "EXECUTIVE",
         "badge": "Recommended",
-        "price_est": f"${int(price * 0.031)}/yr",
+        "price_est": f"{symbol}{int(converted_price * 0.031):,}/yr",
         "features": ["All-Risk Collision Cover", "Third-Party Unlimited Liability", "Personal Driver Cover", "Cashless Repair Hubs"],
         "match": "94% Optimal Match"
     })
@@ -107,7 +119,7 @@ def generate_insurance_recommendations(price, make_label):
         "title": "Metro Guard Select",
         "tier": "ESSENTIAL",
         "badge": "Smart Value",
-        "price_est": f"${int(price * 0.020)}/yr",
+        "price_est": f"{symbol}{int(converted_price * 0.020):,}/yr",
         "features": ["Fire, Theft & Vandalism", "Emergency Towing & Key Lockout", "Basic Medical Assist"],
         "match": "88% Match"
     })
@@ -125,9 +137,10 @@ HTML_TEMPLATE = """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root {
+        /* 1. Premium Dark Theme (Default) */
+        body.theme-dark {
             --bg-base: #0b0f19;
-            --bg-card: rgba(20, 27, 41, 0.7);
+            --bg-card: rgba(20, 27, 41, 0.75);
             --card-border: rgba(255, 255, 255, 0.08);
             --accent: #6366f1;
             --accent-glow: rgba(99, 102, 241, 0.35);
@@ -138,18 +151,21 @@ HTML_TEMPLATE = """
             --header-bg: rgba(11, 15, 25, 0.85);
         }
 
-        body.theme-titanium {
-            --bg-base: #0a0a0c;
-            --bg-card: rgba(22, 22, 26, 0.75);
-            --card-border: rgba(255, 255, 255, 0.12);
-            --accent: #e2e8f0;
-            --accent-glow: rgba(226, 232, 240, 0.25);
-            --accent-hover: #ffffff;
-            --text-heading: #ffffff;
-            --text-sub: #94a3b8;
-            --input-bg: rgba(30, 30, 36, 0.6);
+        /* 2. Premium Light Theme */
+        body.theme-light {
+            --bg-base: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --accent: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.2);
+            --accent-hover: #4338ca;
+            --text-heading: #0f172a;
+            --text-sub: #64748b;
+            --input-bg: rgba(248, 250, 252, 0.9);
+            --header-bg: rgba(255, 255, 255, 0.9);
         }
 
+        /* 3. Cyber Neon Theme */
         body.theme-cyber {
             --bg-base: #070913;
             --bg-card: rgba(14, 20, 38, 0.75);
@@ -160,8 +176,10 @@ HTML_TEMPLATE = """
             --text-heading: #ffffff;
             --text-sub: #8ba1cd;
             --input-bg: rgba(10, 15, 30, 0.7);
+            --header-bg: rgba(7, 9, 19, 0.9);
         }
 
+        /* 4. Royal Gold Theme */
         body.theme-gold {
             --bg-base: #0f0d0a;
             --bg-card: rgba(28, 24, 18, 0.75);
@@ -172,8 +190,10 @@ HTML_TEMPLATE = """
             --text-heading: #fffdf5;
             --text-sub: #a89f91;
             --input-bg: rgba(20, 17, 12, 0.7);
+            --header-bg: rgba(15, 13, 10, 0.9);
         }
 
+        /* 5. Emerald Lux Theme */
         body.theme-emerald {
             --bg-base: #06130e;
             --bg-card: rgba(12, 33, 25, 0.75);
@@ -184,6 +204,7 @@ HTML_TEMPLATE = """
             --text-heading: #f0fdf4;
             --text-sub: #86efac;
             --input-bg: rgba(8, 24, 18, 0.7);
+            --header-bg: rgba(6, 19, 14, 0.9);
         }
 
         * {
@@ -205,11 +226,12 @@ HTML_TEMPLATE = """
             overflow-x: hidden;
         }
 
+        /* Header Layout */
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 18px 40px;
+            padding: 16px 40px;
             background: var(--header-bg);
             backdrop-filter: blur(15px);
             border-bottom: 1px solid var(--card-border);
@@ -224,15 +246,15 @@ HTML_TEMPLATE = """
             align-items: center;
             gap: 12px;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 700;
             letter-spacing: 1px;
             color: var(--text-heading);
         }
 
         .brand-icon {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             background: var(--accent);
             border-radius: 10px;
             display: flex;
@@ -242,90 +264,107 @@ HTML_TEMPLATE = """
             box-shadow: 0 0 15px var(--accent-glow);
         }
 
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-select {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            color: var(--text-heading);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .control-select option {
+            background-color: var(--bg-base);
+            color: var(--text-heading);
+        }
+
         .theme-switcher {
             display: flex;
             align-items: center;
-            gap: 12px;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 6px 14px;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 12px;
             border-radius: 30px;
             border: 1px solid var(--card-border);
         }
 
-        .theme-label {
-            font-size: 0.75rem;
-            color: var(--text-sub);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
         .theme-dot {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.2s ease;
         }
 
         .theme-dot:hover { transform: scale(1.25); }
         .theme-dot.active { border-color: var(--text-heading); transform: scale(1.1); }
 
-        .dot-default { background: #6366f1; }
-        .dot-titanium { background: #e2e8f0; }
+        .dot-dark { background: #6366f1; }
+        .dot-light { background: #ffffff; border: 1px solid #ccc; }
         .dot-cyber { background: #00f0ff; }
         .dot-gold { background: #e5c158; }
         .dot-emerald { background: #10b981; }
 
+        /* Dashboard Container */
         .wrapper {
-            margin-top: 90px;
-            padding: 40px;
+            margin-top: 85px;
+            padding: 35px 40px;
             max-width: 1550px;
             margin-left: auto;
             margin-right: auto;
         }
 
-        .hero-head { margin-bottom: 30px; }
+        .hero-head { margin-bottom: 25px; }
         .hero-head h1 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.2rem;
+            font-size: 2.1rem;
             font-weight: 700;
             margin-bottom: 6px;
         }
-        .hero-head p { color: var(--text-sub); font-size: 1rem; }
+        .hero-head p { color: var(--text-sub); font-size: 0.98rem; }
 
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            gap: 28px;
         }
 
         @media (max-width: 1100px) {
             .dashboard-grid { grid-template-columns: 1fr; }
             .wrapper { padding: 20px; }
-            .header-bar { padding: 15px 20px; }
+            .header-bar { padding: 15px 20px; flex-direction: column; gap: 12px; }
         }
 
+        /* Glass Panels */
         .glass-panel {
             background: var(--bg-card);
             backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
             border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
             position: relative;
         }
 
         .panel-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
             display: flex;
             align-items: center;
             gap: 10px;
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 14px;
+            padding-bottom: 12px;
             color: var(--text-heading);
         }
 
@@ -334,12 +373,12 @@ HTML_TEMPLATE = """
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            gap: 15px;
         }
 
-        .form-field { display: flex; flex-direction: column; gap: 6px; }
+        .form-field { display: flex; flex-direction: column; gap: 5px; }
         .form-field label {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 700;
             color: var(--text-sub);
             text-transform: uppercase;
@@ -350,9 +389,9 @@ HTML_TEMPLATE = """
             background: var(--input-bg);
             border: 1px solid var(--card-border);
             color: var(--text-heading);
-            padding: 12px 14px;
+            padding: 11px 13px;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             outline: none;
         }
 
@@ -361,15 +400,15 @@ HTML_TEMPLATE = """
             box-shadow: 0 0 12px var(--accent-glow);
         }
 
-        .btn-holder { margin-top: 25px; }
+        .btn-holder { margin-top: 22px; }
 
         .btn-spark {
             width: 100%;
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
             color: #ffffff;
             border: none;
-            padding: 16px;
-            font-size: 1rem;
+            padding: 15px;
+            font-size: 0.98rem;
             font-weight: 700;
             border-radius: 10px;
             cursor: pointer;
@@ -402,16 +441,16 @@ HTML_TEMPLATE = """
         .btn-spark:active { transform: translateY(1px); }
 
         .val-card {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.15);
             border: 1px dashed var(--accent);
             border-radius: 12px;
-            padding: 24px;
+            padding: 22px;
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
 
         .val-sub {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -420,7 +459,7 @@ HTML_TEMPLATE = """
 
         .val-price {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 3.2rem;
+            font-size: 3rem;
             font-weight: 700;
             color: var(--accent);
             margin: 8px 0;
@@ -441,19 +480,19 @@ HTML_TEMPLATE = """
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
 
         .m-box {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--card-border);
-            padding: 14px;
+            padding: 13px;
             border-radius: 10px;
             text-align: center;
         }
 
-        .m-val { font-size: 1.15rem; font-weight: 700; margin-top: 4px; color: var(--text-heading); }
-        .m-lbl { font-size: 0.72rem; color: var(--text-sub); text-transform: uppercase; }
+        .m-val { font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: var(--text-heading); }
+        .m-lbl { font-size: 0.7rem; color: var(--text-sub); text-transform: uppercase; }
 
         .plans-list { display: flex; flex-direction: column; gap: 12px; }
 
@@ -461,7 +500,7 @@ HTML_TEMPLATE = """
             background: var(--input-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 16px;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -476,7 +515,7 @@ HTML_TEMPLATE = """
         }
 
         .plan-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .plan-header h4 { font-size: 0.98rem; font-weight: 700; }
+        .plan-header h4 { font-size: 0.95rem; font-weight: 700; }
 
         .badge-tier {
             background: var(--accent);
@@ -488,20 +527,20 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
         }
 
-        .plan-meta { font-size: 0.8rem; color: var(--text-sub); }
+        .plan-meta { font-size: 0.78rem; color: var(--text-sub); }
         .plan-features { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 
         .f-tag {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--card-border);
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 4px;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             color: var(--text-sub);
         }
     </style>
 </head>
-<body class="theme-default">
+<body class="theme-dark">
 
     <header class="header-bar">
         <div class="brand-box">
@@ -509,28 +548,46 @@ HTML_TEMPLATE = """
             <span>AURA MOTORS</span>
         </div>
         
-        <div class="theme-switcher">
-            <span class="theme-label">Theme Engine</span>
-            <div class="theme-dot dot-default active" onclick="switchTheme('theme-default', this)" title="Indigo Core"></div>
-            <div class="theme-dot dot-titanium" onclick="switchTheme('theme-titanium', this)" title="Titanium Dark"></div>
-            <div class="theme-dot dot-cyber" onclick="switchTheme('theme-cyber', this)" title="Cyber Neon"></div>
-            <div class="theme-dot dot-gold" onclick="switchTheme('theme-gold', this)" title="Royal Gold"></div>
-            <div class="theme-dot dot-emerald" onclick="switchTheme('theme-emerald', this)" title="Emerald Lux"></div>
+        <div class="controls-group">
+            <!-- Language Selection -->
+            <select id="langSelect" class="control-select" onchange="updateLanguage()">
+                <option value="en">English (US)</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">日本語</option>
+            </select>
+
+            <!-- Currency Toggle -->
+            <select id="currSelect" class="control-select">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="INR">INR (₹)</option>
+            </select>
+
+            <!-- Multi-Theme Engine Selector -->
+            <div class="theme-switcher">
+                <div class="theme-dot dot-dark active" onclick="switchTheme('theme-dark', this)" title="Premium Dark"></div>
+                <div class="theme-dot dot-light" onclick="switchTheme('theme-light', this)" title="Premium Light"></div>
+                <div class="theme-dot dot-cyber" onclick="switchTheme('theme-cyber', this)" title="Cyber Neon"></div>
+                <div class="theme-dot dot-gold" onclick="switchTheme('theme-gold', this)" title="Royal Gold"></div>
+                <div class="theme-dot dot-emerald" onclick="switchTheme('theme-emerald', this)" title="Emerald Lux"></div>
+            </div>
         </div>
     </header>
 
     <div class="wrapper">
         <div class="hero-head">
-            <h1>Executive Valuation & Telemetry</h1>
-            <p>Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.</p>
+            <h1 id="txtTitle">Executive Valuation & Telemetry</h1>
+            <p id="txtSub">Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.</p>
         </div>
 
         <div class="dashboard-grid">
             <div class="glass-panel">
-                <div class="panel-title"><i class="fa-solid fa-sliders"></i> Vehicle Specifications</div>
+                <div class="panel-title"><i class="fa-solid fa-sliders"></i> <span id="txtSpec">Vehicle Specifications</span></div>
                 <form id="valuationForm">
                     <div class="form-grid">
-                        <!-- Categorical options rendered with name displayed, numeric value sent to backend -->
                         {% for col, options in categorical_options.items() %}
                         <div class="form-field">
                             <label for="{{ col }}">{{ col.replace('_', ' ') }}</label>
@@ -552,41 +609,41 @@ HTML_TEMPLATE = """
 
                     <div class="btn-holder">
                         <button type="submit" class="btn-spark" id="calcBtn">
-                            <i class="fa-solid fa-microchip"></i> Run AI Valuation
+                            <i class="fa-solid fa-microchip"></i> <span id="txtBtn">Run AI Valuation</span>
                         </button>
                     </div>
                 </form>
             </div>
 
             <div class="glass-panel">
-                <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> Intelligence Output</div>
+                <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> <span id="txtOut">Intelligence Output</span></div>
 
                 <div class="val-card">
-                    <div class="val-sub">Estimated Market Value</div>
+                    <div class="val-sub" id="txtValSub">Estimated Market Value</div>
                     <div class="val-price" id="valPrice">$0.00</div>
                     <span class="status-pill" id="valStatus">Ready for Calculation</span>
                 </div>
 
                 <div class="metrics-row">
                     <div class="m-box">
-                        <div class="m-lbl">Efficiency</div>
+                        <div class="m-lbl" id="lblEff">Efficiency</div>
                         <div class="m-val" id="mEfficiency">--</div>
                     </div>
                     <div class="m-box">
-                        <div class="m-lbl">Risk Rating</div>
+                        <div class="m-lbl" id="lblRisk">Risk Rating</div>
                         <div class="m-val" id="mRisk">--</div>
                     </div>
                     <div class="m-box">
-                        <div class="m-lbl">Depreciation</div>
+                        <div class="m-lbl" id="lblDep">Depreciation</div>
                         <div class="m-val" id="mDep">--</div>
                     </div>
                 </div>
 
                 <div class="panel-title" style="margin-top: 10px; border-bottom: none; margin-bottom: 12px;">
-                    <i class="fa-solid fa-shield"></i> Premium Coverage Plans
+                    <i class="fa-solid fa-shield"></i> <span id="txtPlans">Premium Coverage Plans</span>
                 </div>
                 <div class="plans-list" id="insuranceContainer">
-                    <p style="color: var(--text-sub); text-align: center; padding: 20px;">
+                    <p style="color: var(--text-sub); text-align: center; padding: 20px;" id="txtPrompt">
                         Input vehicle metrics and execute valuation to view dynamic insurance proposals.
                     </p>
                 </div>
@@ -595,6 +652,104 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        // Language Dictionaries
+        const i18n = {
+            en: {
+                title: "Executive Valuation & Telemetry",
+                sub: "Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.",
+                spec: "Vehicle Specifications",
+                out: "Intelligence Output",
+                valsub: "Estimated Market Value",
+                btn: "Run AI Valuation",
+                btnProc: "Processing Model...",
+                eff: "Efficiency",
+                risk: "Risk Rating",
+                dep: "Depreciation",
+                plans: "Premium Coverage Plans",
+                prompt: "Input vehicle metrics and execute valuation to view dynamic insurance proposals.",
+                ready: "Valuation Verified"
+            },
+            es: {
+                title: "Evaluación Ejecutiva y Telemetría",
+                sub: "Calcule la tasación de mercado mediante regresión de bosque aleatorio.",
+                spec: "Especificaciones del Vehículo",
+                out: "Resultado de Inteligencia",
+                valsub: "Valor de Mercado Estimado",
+                btn: "Ejecutar Valoración IA",
+                btnProc: "Procesando Modelo...",
+                eff: "Eficiencia",
+                risk: "Clasificación de Riesgo",
+                dep: "Depreciación",
+                plans: "Planes de Cobertura Premium",
+                prompt: "Ingrese las métricas del vehículo para ver las propuestas de seguro.",
+                ready: "Valoración Verificada"
+            },
+            fr: {
+                title: "Évaluation Exécutive et Télémétrie",
+                sub: "Calculez l'évaluation du marché via la régression Random Forest.",
+                spec: "Spécifications du Véhicule",
+                out: "Résultat d'Intelligence",
+                valsub: "Valeur Estimée du Marché",
+                btn: "Lancer l'Évaluation IA",
+                btnProc: "Traitement du Modèle...",
+                eff: "Efficacité",
+                risk: "Évaluation du Risque",
+                dep: "Dépréciation",
+                plans: "Plans de Couverture Premium",
+                prompt: "Saisissez les métriques du véhicule pour voir les propositions d'assurance.",
+                ready: "Évaluation Vérifiée"
+            },
+            de: {
+                title: "Executive Bewertung & Telemetrie",
+                sub: "Berechnen Sie den Marktwert über Random Forest Regression.",
+                spec: "Fahrzeugspezifikationen",
+                out: "Intelligenz-Ausgabe",
+                valsub: "Geschätzter Marktwert",
+                btn: "KI-Bewertung Starten",
+                btnProc: "Modell wird verarbeitet...",
+                eff: "Effizienz",
+                risk: "Risikobewertung",
+                dep: "Wertverlust",
+                plans: "Premium-Deckungspläne",
+                prompt: "Geben Sie Fahrzeugdaten ein, um Versicherungsangebote anzuzeigen.",
+                ready: "Bewertung Verifiziert"
+            },
+            ja: {
+                title: "エグゼクティブ車両査定＆テレメトリ",
+                sub: "ランダムフォレスト回帰により市場価格を計算し、最適な保険プランを評価します。",
+                spec: "車両仕様スペック",
+                out: "インテリジェンス出力",
+                valsub: "推定市場価格",
+                btn: "AI査定を実行",
+                btnProc: "モデル処理中...",
+                eff: "燃費効率",
+                risk: "リスク評価",
+                dep: "減価償却",
+                plans: "プレミアム保険プラン",
+                prompt: "車両データを入力してAI査定を実行すると、保険プランが表示されます。",
+                ready: "査定完了"
+            }
+        };
+
+        function updateLanguage() {
+            const lang = document.getElementById('langSelect').value;
+            const dict = i18n[lang] || i18n.en;
+
+            document.getElementById('txtTitle').innerText = dict.title;
+            document.getElementById('txtSub').innerText = dict.sub;
+            document.getElementById('txtSpec').innerText = dict.spec;
+            document.getElementById('txtOut').innerText = dict.out;
+            document.getElementById('txtValSub').innerText = dict.valsub;
+            document.getElementById('txtBtn').innerText = dict.btn;
+            document.getElementById('lblEff').innerText = dict.eff;
+            document.getElementById('lblRisk').innerText = dict.risk;
+            document.getElementById('lblDep').innerText = dict.dep;
+            document.getElementById('txtPlans').innerText = dict.plans;
+            
+            const promptElem = document.getElementById('txtPrompt');
+            if(promptElem) promptElem.innerText = dict.prompt;
+        }
+
         function switchTheme(themeName, elem) {
             document.body.className = themeName;
             document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
@@ -604,12 +759,18 @@ HTML_TEMPLATE = """
         document.getElementById('valuationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const lang = document.getElementById('langSelect').value;
+            const dict = i18n[lang] || i18n.en;
+            
             const btn = document.getElementById('calcBtn');
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Model...';
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${dict.btnProc}`;
 
             const formData = new FormData(this);
             const payload = {};
             formData.forEach((value, key) => { payload[key] = value; });
+
+            // Attach current currency selection to API payload
+            payload['currency'] = document.getElementById('currSelect').value;
 
             try {
                 const response = await fetch('/predict', {
@@ -621,8 +782,8 @@ HTML_TEMPLATE = """
                 const res = await response.json();
 
                 if (res.success) {
-                    document.getElementById('valPrice').innerText = '$' + res.predicted_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    document.getElementById('valStatus').innerText = 'Valuation Verified';
+                    document.getElementById('valPrice').innerText = res.formatted_price;
+                    document.getElementById('valStatus').innerText = dict.ready;
 
                     document.getElementById('mEfficiency').innerText = res.metrics.efficiency;
                     document.getElementById('mRisk').innerText = res.metrics.risk;
@@ -633,7 +794,7 @@ HTML_TEMPLATE = """
 
                     res.recommendations.forEach(plan => {
                         container.innerHTML += `
-                            <div class="plan-card" onclick="alert('Selected Coverage: ${plan.title}')">
+                            <div class="plan-card" onclick="alert('Selected Plan: ${plan.title}')">
                                 <div>
                                     <div class="plan-header">
                                         <h4>${plan.title}</h4>
@@ -654,7 +815,7 @@ HTML_TEMPLATE = """
             } catch (err) {
                 alert('Connection error with Flask server.');
             } finally {
-                btn.innerHTML = '<i class="fa-solid fa-microchip"></i> Run AI Valuation';
+                btn.innerHTML = `<i class="fa-solid fa-microchip"></i> <span id="txtBtn">${dict.btn}</span>`;
             }
         });
     </script>
@@ -674,6 +835,7 @@ def index():
 def predict():
     try:
         data = request.get_json()
+        currency_code = data.get("currency", "USD")
         
         # Build DataFrame with numeric floats for model compatibility
         input_data = {}
@@ -687,16 +849,21 @@ def predict():
 
         if model is not None:
             prediction = model.predict(df_input)[0]
-            predicted_value = float(prediction)
+            predicted_usd = float(prediction)
         else:
-            predicted_value = float(
+            predicted_usd = float(
                 df_input["Engine_Size"].iloc[0] * 5200 + 
                 df_input["Horsepower"].iloc[0] * 130 - 
                 df_input["Mileage"].iloc[0] * 0.04 + 
                 (2026 - df_input["Year"].iloc[0]) * -900 + 22000
             )
 
-        # Lookup human-readable string values for analysis logic
+        # Currency Conversion
+        curr = CURRENCY_RATES.get(currency_code, CURRENCY_RATES["USD"])
+        converted_val = predicted_usd * curr["rate"]
+        formatted_price = f"{curr['symbol']}{converted_val:,.2f}"
+
+        # Category Name Lookup for Insurance & Telemetry Logic
         make_code = str(data.get("Make", "0"))
         make_label = CAT_LOOKUP["Make"].get(make_code, "Toyota")
 
@@ -709,11 +876,12 @@ def predict():
         dep_risk = "Low" if mileage < 30000 else ("Moderate" if mileage < 75000 else "High")
         efficiency_tier = "A+" if float(data.get("Fuel_Efficiency", 16.8)) > 17.0 else "Standard"
 
-        recommendations = generate_insurance_recommendations(predicted_value, make_label)
+        recommendations = generate_insurance_recommendations(predicted_usd, make_label, currency_code)
 
         return jsonify({
             "success": True,
-            "predicted_price": round(predicted_value, 2),
+            "predicted_usd": round(predicted_usd, 2),
+            "formatted_price": formatted_price,
             "metrics": {
                 "efficiency": efficiency_tier,
                 "risk": risk_level,
@@ -725,5 +893,5 @@ def predict():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
