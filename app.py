@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Configured to load your exact pickle file filename
+# Model loading setup using the exact pickle filename
 MODEL_PATH = "RMR (1).pkl"
 model = None
 
@@ -18,9 +18,9 @@ if os.path.exists(MODEL_PATH):
     except Exception as e:
         print(f"Error loading pickle file: {e}")
 else:
-    print(f"Warning: {MODEL_PATH} not found in the root directory.")
+    print(f"Warning: '{MODEL_PATH}' not found in the root directory. Operating in preview mode.")
 
-# Feature mapping structured natively with absolute human-readable strings
+# Feature mapping with categorical options as readable strings
 CATEGORICAL_OPTIONS = {
     "Make": ["Toyota", "Honda", "Ford", "BMW", "Mercedes-Benz", "Audi", "Hyundai", "Nissan", "Chevrolet", "Kia"],
     "Model": ["Sedan", "SUV", "Hatchback", "Coupe", "Truck", "Convertible", "Van", "Wagon"],
@@ -35,13 +35,13 @@ CATEGORICAL_OPTIONS = {
 }
 
 DEFAULT_NUMERICALS = {
-    "Year": 2020,
-    "Engine_Size": 2.0,
-    "Mileage": 45000.0,
-    "Horsepower": 180.0,
-    "Torque": 250.0,
+    "Year": 2022,
+    "Engine_Size": 2.5,
+    "Mileage": 32000.0,
+    "Horsepower": 210.0,
+    "Torque": 280.0,
     "Owners": 1,
-    "Fuel_Efficiency": 15.5
+    "Fuel_Efficiency": 16.8
 }
 
 FEATURE_ORDER = [
@@ -52,273 +52,331 @@ FEATURE_ORDER = [
 ]
 
 def generate_insurance_recommendations(price, vehicle_data):
-    """Generates a dynamic tier structure for premium auto cover match matching."""
+    """Generate luxury insurance coverage proposals based on vehicle profile."""
     recommendations = []
     
-    # Premium Luxury Tier
-    if price > 30000 or vehicle_data.get("Make") in ["BMW", "Mercedes-Benz", "Audi"]:
+    # Premium / Executive Tier
+    if price > 35000 or vehicle_data.get("Make") in ["BMW", "Mercedes-Benz", "Audi"]:
         recommendations.append({
-            "title": "Netflix Red Shield — Elite Cover",
-            "tier": "PREMIUM",
-            "badge": "Top Recommended",
-            "price_est": f"${int(price * 0.045)}/year",
-            "features": ["Zero Depreciation", "24/7 Roadside Assistance", "Engine & Gearbox Protect", "Global Return-to-Invoice"],
-            "match": "98% Match for your vehicle class"
+            "title": "Titanium Sovereign Cover",
+            "tier": "PLATINUM",
+            "badge": "VIP Choice",
+            "price_est": f"${int(price * 0.042)}/yr",
+            "features": ["Zero Depreciation", "Full Engine & ECU Protection", "24/7 Global Concierge", "Guaranteed Invoice Value"],
+            "match": "99% Precision Match"
         })
     
-    # Comprehensive Standard Tier
+    # Comprehensive Core Tier
     recommendations.append({
-        "title": "DriveGuard Comprehensive Plus",
-        "tier": "POPULAR",
-        "badge": "Best Value",
-        "price_est": f"${int(price * 0.032)}/year",
-        "features": ["Third-Party Liability", "Accident Damage Cover", "Personal Accident Protection", "Cashless Garage Network"],
-        "match": "92% Match"
+        "title": "Apex Dynamic Shield",
+        "tier": "EXECUTIVE",
+        "badge": "Recommended",
+        "price_est": f"${int(price * 0.031)}/yr",
+        "features": ["All-Risk Collision Cover", "Third-Party Unlimited Liability", "Personal Driver Cover", "Cashless Repair Hubs"],
+        "match": "94% Optimal Match"
     })
     
-    # Essential / Smart Saver Tier
+    # Essential Urban Tier
     recommendations.append({
-        "title": "SmartSaver Essential Auto",
+        "title": "Metro Guard Select",
         "tier": "ESSENTIAL",
-        "badge": "Budget Friendly",
-        "price_est": f"${int(price * 0.021)}/year",
-        "features": ["Basic Liability", "Fire & Theft Cover", "Emergency Towing Support"],
-        "match": "85% Match"
+        "badge": "Smart Value",
+        "price_est": f"${int(price * 0.020)}/yr",
+        "features": ["Fire, Theft & Vandalism", "Emergency Towing & Key Lockout", "Basic Medical Assist"],
+        "match": "88% Match"
     })
     
     return recommendations
 
-# Modern single-page web framework setup utilizing embedded styling layers
+# Executive Dashboard Template with Glassmorphic Interface & Dynamic Themes
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoPredict Studio — Premium Vehicle Valuation</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>AURA Motors — Executive Vehicle Intelligence Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* Base Root Color Variables */
         :root {
-            --bg-color: #141414;
-            --card-bg: #1f1f1f;
-            --card-border: #2b2b2b;
-            --primary-accent: #E50914;
-            --primary-hover: #f40612;
-            --text-main: #FFFFFF;
-            --text-secondary: #AAAAAA;
-            --input-bg: #2b2b2b;
-            --glow: rgba(229, 9, 20, 0.4);
+            --bg-base: #0b0f19;
+            --bg-card: rgba(20, 27, 41, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.35);
+            --accent-hover: #4f46e5;
+            --text-heading: #f8fafc;
+            --text-sub: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --header-bg: rgba(11, 15, 25, 0.85);
         }
 
-        /* UI Theme Profiles */
-        body.theme-netflix {
-            --bg-color: #141414;
-            --card-bg: #181818;
-            --primary-accent: #E50914;
-            --primary-hover: #ff0f1a;
-            --glow: rgba(229, 9, 20, 0.5);
+        /* Dynamic Preset Themes */
+        body.theme-titanium {
+            --bg-base: #0a0a0c;
+            --bg-card: rgba(22, 22, 26, 0.75);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --accent: #e2e8f0;
+            --accent-glow: rgba(226, 232, 240, 0.25);
+            --accent-hover: #ffffff;
+            --text-heading: #ffffff;
+            --text-sub: #94a3b8;
+            --input-bg: rgba(30, 30, 36, 0.6);
         }
 
-        body.theme-cyberpunk {
-            --bg-color: #0d0e15;
-            --card-bg: #151828;
-            --card-border: #262b48;
-            --primary-accent: #00F0FF;
-            --primary-hover: #70F3FF;
-            --text-main: #FFFFFF;
-            --input-bg: #1c2038;
-            --glow: rgba(0, 240, 255, 0.5);
+        body.theme-cyber {
+            --bg-base: #070913;
+            --bg-card: rgba(14, 20, 38, 0.75);
+            --card-border: rgba(0, 240, 255, 0.2);
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.4);
+            --accent-hover: #70f3ff;
+            --text-heading: #ffffff;
+            --text-sub: #8ba1cd;
+            --input-bg: rgba(10, 15, 30, 0.7);
         }
 
         body.theme-gold {
-            --bg-color: #0d0d0d;
-            --card-bg: #171717;
-            --card-border: #2a2a2a;
-            --primary-accent: #D4AF37;
-            --primary-hover: #f3cf55;
-            --input-bg: #222222;
-            --glow: rgba(212, 175, 55, 0.4);
+            --bg-base: #0f0d0a;
+            --bg-card: rgba(28, 24, 18, 0.75);
+            --card-border: rgba(212, 175, 55, 0.25);
+            --accent: #e5c158;
+            --accent-glow: rgba(229, 193, 88, 0.35);
+            --accent-hover: #f3d478;
+            --text-heading: #fffdf5;
+            --text-sub: #a89f91;
+            --input-bg: rgba(20, 17, 12, 0.7);
         }
 
         body.theme-emerald {
-            --bg-color: #06120e;
-            --card-bg: #0d211a;
-            --card-border: #18382d;
-            --primary-accent: #10B981;
-            --primary-hover: #34D399;
-            --input-bg: #122c23;
-            --glow: rgba(16, 185, 129, 0.4);
+            --bg-base: #06130e;
+            --bg-card: rgba(12, 33, 25, 0.75);
+            --card-border: rgba(16, 185, 129, 0.25);
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.4);
+            --accent-hover: #34d399;
+            --text-heading: #f0fdf4;
+            --text-sub: #86efac;
+            --input-bg: rgba(8, 24, 18, 0.7);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: var(--bg-base);
+            color: var(--text-heading);
             min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 20%, var(--accent-glow) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, var(--accent-glow) 0%, transparent 45%);
+            background-attachment: fixed;
             overflow-x: hidden;
         }
 
-        .navbar {
+        /* Top Bar Navigation */
+        .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 50px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            padding: 18px 40px;
+            background: var(--header-bg);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--card-border);
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
         }
 
-        .brand-logo {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--primary-accent);
-            text-decoration: none;
-            letter-spacing: 1px;
+        .brand-box {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-heading);
         }
 
-        .theme-selector {
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--accent);
+            border-radius: 10px;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .theme-switcher {
+            display: flex;
+            align-items: center;
             gap: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 14px;
             border-radius: 30px;
             border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
         }
 
-        .theme-btn {
-            width: 22px;
-            height: 22px;
+        .theme-label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .theme-dot {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: transform 0.2s;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
-        .theme-btn:hover { transform: scale(1.2); }
-        .theme-btn.active { border-color: #FFFFFF; }
+        .theme-dot:hover {
+            transform: scale(1.25);
+        }
 
-        .btn-netflix-red { background-color: #E50914; }
-        .btn-cyberpunk { background-color: #00F0FF; }
-        .btn-gold { background-color: #D4AF37; }
-        .btn-emerald { background-color: #10B981; }
+        .theme-dot.active {
+            border-color: var(--text-heading);
+            transform: scale(1.1);
+        }
 
-        .hero-container {
-            margin-top: 100px;
-            padding: 0 50px 50px;
-            max-width: 1600px;
+        .dot-default { background: #6366f1; }
+        .dot-titanium { background: #e2e8f0; }
+        .dot-cyber { background: #00f0ff; }
+        .dot-gold { background: #e5c158; }
+        .dot-emerald { background: #10b981; }
+
+        /* Dashboard Container */
+        .wrapper {
+            margin-top: 90px;
+            padding: 40px;
+            max-width: 1550px;
             margin-left: auto;
             margin-right: auto;
         }
 
-        .hero-banner {
+        .hero-head {
             margin-bottom: 30px;
-            animation: fadeIn 1s ease-in-out;
         }
 
-        .hero-banner h1 {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 8px;
+        .hero-head h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
-        .hero-banner p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
+        .hero-head p {
+            color: var(--text-sub);
+            font-size: 1rem;
         }
 
-        .main-grid {
+        /* Two Column Grid Layout */
+        .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
         }
 
-        @media (max-width: 1024px) {
-            .main-grid { grid-template-columns: 1fr; }
-            .hero-container { padding: 0 20px 30px; }
-            .navbar { padding: 15px 20px; }
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .wrapper { padding: 20px; }
+            .header-bar { padding: 15px 20px; }
         }
 
-        .glass-card {
-            background-color: var(--card-bg);
+        /* Glassmorphic Panel Design */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            position: relative;
         }
 
-        .card-header {
-            font-size: 1.3rem;
+        .panel-title {
+            font-size: 1.15rem;
             font-weight: 700;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: var(--text-main);
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 12px;
+            padding-bottom: 14px;
+            color: var(--text-heading);
         }
 
+        .panel-title i {
+            color: var(--accent);
+        }
+
+        /* Form Inputs Layout */
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
         }
 
-        .form-group {
+        .form-field {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
 
-        .form-group label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 600;
+        .form-field label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .form-control {
-            background-color: var(--input-bg);
-            border: 1fr solid var(--card-border);
-            color: var(--text-main);
+        .custom-input {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-heading);
             padding: 12px 14px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.95rem;
             outline: none;
-            border: 1px solid transparent;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-accent);
-            box-shadow: 0 0 10px var(--glow);
+        .custom-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
 
-        /* Shimmering Button Actions */
-        .premium-btn {
+        /* Premium Animation Action Button */
+        .btn-holder {
+            margin-top: 25px;
+        }
+
+        .btn-spark {
             width: 100%;
-            background: var(--primary-accent);
-            color: #FFFFFF;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: #ffffff;
             border: none;
             padding: 16px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             position: relative;
             overflow: hidden;
@@ -328,162 +386,215 @@ HTML_TEMPLATE = """
             gap: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 15px var(--glow);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 25px var(--accent-glow);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .premium-btn::before {
+        .btn-spark::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.6s ease;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent,
+                rgba(255, 255, 255, 0.25),
+                transparent
+            );
+            transform: rotate(30deg);
+            transition: transform 0.8s ease;
         }
 
-        .premium-btn:hover::before { left: 100%; }
-
-        .premium-btn:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px var(--glow);
+        .btn-spark:hover::after {
+            transform: translate(100%, 100%) rotate(30deg);
         }
 
-        .valuation-box {
+        .btn-spark:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 12px 30px var(--accent-glow);
+        }
+
+        .btn-spark:active {
+            transform: translateY(1px);
+        }
+
+        /* Valuation Dashboard Card */
+        .val-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed var(--accent);
+            border-radius: 12px;
+            padding: 24px;
             text-align: center;
-            padding: 25px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            border: 1px dashed var(--primary-accent);
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
 
-        .valuation-title {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+        .val-sub {
+            font-size: 0.8rem;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 700;
         }
 
-        .valuation-amount {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--primary-accent);
-            margin: 10px 0;
-            text-shadow: 0 0 20px var(--glow);
+        .val-price {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 8px 0;
+            text-shadow: 0 0 25px var(--accent-glow);
         }
 
-        .metrics-grid {
+        .status-pill {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-heading);
+        }
+
+        /* Clean Analytics Telemetry Grid */
+        .metrics-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 12px;
+            margin-bottom: 24px;
         }
 
-        .metric-card {
-            background-color: rgba(255,255,255,0.03);
-            padding: 15px;
-            border-radius: 8px;
+        .m-box {
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--card-border);
+            padding: 14px;
+            border-radius: 10px;
             text-align: center;
         }
 
-        .metric-value { font-size: 1.2rem; font-weight: 700; margin-top: 5px; }
-        .metric-label { font-size: 0.75rem; color: var(--text-secondary); }
-
-        .section-title {
-            font-size: 1.2rem;
+        .m-val {
+            font-size: 1.15rem;
             font-weight: 700;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-top: 4px;
+            color: var(--text-heading);
         }
 
-        .recommendation-list { display: flex; flex-direction: column; gap: 15px; }
+        .m-lbl {
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+        }
 
-        .rec-card {
+        /* Insurance Proposals Layout */
+        .plans-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .plan-card {
             background: var(--input-bg);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
+            transition: all 0.25s ease;
         }
 
-        .rec-card:hover {
-            transform: scale(1.02);
-            border-color: var(--primary-accent);
+        .plan-card:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px var(--accent-glow);
         }
 
-        .rec-info h4 { font-size: 1rem; margin-bottom: 4px; }
-        .rec-info p { font-size: 0.8rem; color: var(--text-secondary); }
-
-        .rec-features { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-
-        .tag {
-            background: rgba(255,255,255,0.08);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            color: var(--text-main);
+        .plan-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
         }
 
-        .rec-badge {
-            background: var(--primary-accent);
-            color: #fff;
-            padding: 4px 10px;
-            font-size: 0.75rem;
+        .plan-header h4 {
+            font-size: 0.98rem;
             font-weight: 700;
-            border-radius: 20px;
+        }
+
+        .badge-tier {
+            background: var(--accent);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 12px;
             text-transform: uppercase;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .plan-meta {
+            font-size: 0.8rem;
+            color: var(--text-sub);
         }
 
-        .pulse { animation: pulse-animation 2s infinite; }
+        .plan-features {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
 
-        @keyframes pulse-animation {
-            0% { box-shadow: 0 0 0 0px var(--glow); }
-            70% { box-shadow: 0 0 0 15px rgba(0, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0px rgba(0, 0, 0, 0); }
+        .f-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-sub);
         }
     </style>
 </head>
-<body class="theme-netflix">
+<body class="theme-default">
 
-    <nav class="navbar">
-        <a href="#" class="brand-logo"><i class="fa-solid fa-play"></i> AUTOPREDICT STUDIO</a>
-        <div class="theme-selector">
-            <div class="theme-btn btn-netflix-red active" onclick="setTheme('theme-netflix', this)"></div>
-            <div class="theme-btn btn-cyberpunk" onclick="setTheme('theme-cyberpunk', this)"></div>
-            <div class="theme-btn btn-gold" onclick="setTheme('theme-gold', this)"></div>
-            <div class="theme-btn btn-emerald" onclick="setTheme('theme-emerald', this)"></div>
+    <!-- Header Navigation Bar -->
+    <header class="header-bar">
+        <div class="brand-box">
+            <div class="brand-icon">
+                <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <span>AURA MOTORS</span>
         </div>
-    </nav>
+        
+        <div class="theme-switcher">
+            <span class="theme-label">Theme Engine</span>
+            <div class="theme-dot dot-default active" onclick="switchTheme('theme-default', this)" title="Indigo Core"></div>
+            <div class="theme-dot dot-titanium" onclick="switchTheme('theme-titanium', this)" title="Titanium Dark"></div>
+            <div class="theme-dot dot-cyber" onclick="switchTheme('theme-cyber', this)" title="Cyber Neon"></div>
+            <div class="theme-dot dot-gold" onclick="switchTheme('theme-gold', this)" title="Royal Gold"></div>
+            <div class="theme-dot dot-emerald" onclick="switchTheme('theme-emerald', this)" title="Emerald Lux"></div>
+        </div>
+    </header>
 
-    <div class="hero-container">
-        <div class="hero-banner">
-            <h1>Vehicle Valuation & Insurance Analytics</h1>
-            <p>Enter parameters to compute real-time Random Forest predictions and receive tailored insurance plans.</p>
+    <!-- Main Section -->
+    <div class="wrapper">
+        <div class="hero-head">
+            <h1>Executive Valuation & Telemetry</h1>
+            <p>Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.</p>
         </div>
 
-        <div class="main-grid">
-            <div class="glass-card">
-                <div class="card-header"><i class="fa-solid fa-sliders"></i> Vehicle Specifications</div>
-                <form id="predictionForm">
+        <div class="dashboard-grid">
+            <!-- Parameters Form -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <i class="fa-solid fa-sliders"></i> Vehicle Specifications
+                </div>
+                <form id="valuationForm">
                     <div class="form-grid">
                         {% for col in categorical_keys %}
-                        <div class="form-group">
+                        <div class="form-field">
                             <label for="{{ col }}">{{ col.replace('_', ' ') }}</label>
-                            <select id="{{ col }}" name="{{ col }}" class="form-control">
+                            <select id="{{ col }}" name="{{ col }}" class="custom-input">
                                 {% for val in categorical_options[col] %}
                                 <option value="{{ val }}">{{ val }}</option>
                                 {% endfor %}
@@ -492,47 +603,56 @@ HTML_TEMPLATE = """
                         {% endfor %}
 
                         {% for col, val in default_numericals.items() %}
-                        <div class="form-group">
+                        <div class="form-field">
                             <label for="{{ col }}">{{ col.replace('_', ' ') }}</label>
-                            <input type="number" step="any" id="{{ col }}" name="{{ col }}" value="{{ val }}" class="form-control" required>
+                            <input type="number" step="any" id="{{ col }}" name="{{ col }}" value="{{ val }}" class="custom-input" required>
                         </div>
                         {% endfor %}
                     </div>
-                    <div style="margin-top: 25px;">
-                        <button type="submit" class="premium-btn pulse" id="submitBtn">
-                            <i class="fa-solid fa-bolt"></i> Generate Valuation & Insights
+
+                    <div class="btn-holder">
+                        <button type="submit" class="btn-spark" id="calcBtn">
+                            <i class="fa-solid fa-microchip"></i> Run AI Valuation
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="glass-card">
-                <div class="card-header"><i class="fa-solid fa-chart-line"></i> Valuation Dashboard</div>
-                <div class="valuation-box">
-                    <div class="valuation-title">Predicted Market Price</div>
-                    <div class="valuation-amount" id="predictedPrice">$0.00</div>
-                    <span class="tag" id="statusBadge">Model Ready</span>
+            <!-- Valuation Output & Insurance Analytics -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <i class="fa-solid fa-chart-pie"></i> Intelligence Output
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-label">Efficiency Index</div>
-                        <div class="metric-value" id="metricEfficiency">--</div>
+                <div class="val-card">
+                    <div class="val-sub">Estimated Market Value</div>
+                    <div class="val-price" id="valPrice">$0.00</div>
+                    <span class="status-pill" id="valStatus">Ready for Calculation</span>
+                </div>
+
+                <!-- Clean Metric Dashboard -->
+                <div class="metrics-row">
+                    <div class="m-box">
+                        <div class="m-lbl">Efficiency</div>
+                        <div class="m-val" id="mEfficiency">--</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Risk Rating</div>
-                        <div class="metric-value" id="metricRisk">--</div>
+                    <div class="m-box">
+                        <div class="m-lbl">Risk Rating</div>
+                        <div class="m-val" id="mRisk">--</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Depreciation Risk</div>
-                        <div class="metric-value" id="metricDep">--</div>
+                    <div class="m-box">
+                        <div class="m-lbl">Depreciation</div>
+                        <div class="m-val" id="mDep">--</div>
                     </div>
                 </div>
 
-                <div class="section-title"><i class="fa-solid fa-shield-halved"></i> Recommended Insurance Plans</div>
-                <div class="recommendation-list" id="recommendationsList">
-                    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
-                        Complete vehicle parameters to generate tailored coverage options.
+                <!-- Insurance Plan Recommendations -->
+                <div class="panel-title" style="margin-top: 10px; border-bottom: none; margin-bottom: 12px;">
+                    <i class="fa-solid fa-shield"></i> Premium Coverage Plans
+                </div>
+                <div class="plans-list" id="insuranceContainer">
+                    <p style="color: var(--text-sub); text-align: center; padding: 20px;">
+                        Input vehicle metrics and execute valuation to view dynamic insurance proposals.
                     </p>
                 </div>
             </div>
@@ -540,57 +660,71 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        function setTheme(themeName, element) {
+        // Switch dynamic CSS themes
+        function switchTheme(themeName, elem) {
             document.body.className = themeName;
-            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
+            document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
+            elem.classList.add('active');
         }
 
-        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        // AJAX Form Submission
+        document.getElementById('valuationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...';
             
+            const btn = document.getElementById('calcBtn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Model...';
+
             const formData = new FormData(this);
-            const data = {};
-            formData.forEach((value, key) => { data[key] = value; });
+            const payload = {};
+            formData.forEach((value, key) => { payload[key] = value; });
 
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
-                const result = await response.json();
 
-                if (result.success) {
-                    document.getElementById('predictedPrice').innerText = '$' + result.predicted_price.toLocaleString(undefined, {minimumFractionDigits: 2});
-                    document.getElementById('statusBadge').innerText = 'Valuation Complete';
-                    document.getElementById('metricEfficiency').innerText = result.metrics.efficiency;
-                    document.getElementById('metricRisk').innerText = result.metrics.risk;
-                    document.getElementById('metricDep').innerText = result.metrics.depreciation;
+                const res = await response.json();
 
-                    const recContainer = document.getElementById('recommendationsList');
-                    recContainer.innerHTML = '';
-                    result.recommendations.forEach(plan => {
-                        recContainer.innerHTML += `
-                            <div class="rec-card" onclick="alert('Connecting to ${plan.title} security core...')">
-                                <div class="rec-info">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
+                if (res.success) {
+                    // Update main valuation UI
+                    document.getElementById('valPrice').innerText = '$' + res.predicted_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    document.getElementById('valStatus').innerText = 'Valuation Verified';
+
+                    // Update metrics
+                    document.getElementById('mEfficiency').innerText = res.metrics.efficiency;
+                    document.getElementById('mRisk').innerText = res.metrics.risk;
+                    document.getElementById('mDep').innerText = res.metrics.depreciation;
+
+                    // Render tailored insurance proposals
+                    const container = document.getElementById('insuranceContainer');
+                    container.innerHTML = '';
+
+                    res.recommendations.forEach(plan => {
+                        container.innerHTML += `
+                            <div class="plan-card" onclick="alert('Selected Coverage: ${plan.title}')">
+                                <div>
+                                    <div class="plan-header">
                                         <h4>${plan.title}</h4>
-                                        <span class="rec-badge">${plan.badge}</span>
+                                        <span class="badge-tier">${plan.badge}</span>
                                     </div>
-                                    <p>${plan.match} • Estimated: <strong>${plan.price_est}</strong></p>
-                                    <div class="rec-features">${plan.features.map(f => `<span class="tag">${f}</span>`).join('')}</div>
+                                    <div class="plan-meta">${plan.match} • Estimated Premium: <strong>${plan.price_est}</strong></div>
+                                    <div class="plan-features">
+                                        ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
+                                    </div>
                                 </div>
-                                <div><i class="fa-solid fa-chevron-right" style="color: var(--text-secondary);"></i></div>
-                            </div>`;
+                                <i class="fa-solid fa-chevron-right" style="color: var(--text-sub);"></i>
+                            </div>
+                        `;
                     });
+                } else {
+                    alert('Error: ' + res.error);
                 }
             } catch (err) {
-                alert('Connection failure to API infrastructure.');
+                alert('Connection error with Flask server.');
             } finally {
-                submitBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Valuation & Insights';
+                btn.innerHTML = '<i class="fa-solid fa-microchip"></i> Run AI Valuation';
             }
         });
     </script>
@@ -611,6 +745,8 @@ def index():
 def predict():
     try:
         data = request.get_json()
+        
+        # Build single-row DataFrame with categorical columns retained as readable strings
         input_data = {}
         for col in FEATURE_ORDER:
             if col in CATEGORICAL_OPTIONS:
@@ -620,30 +756,837 @@ def predict():
 
         df_input = pd.DataFrame(input_data)
 
+        # Run Random Forest Model prediction
         if model is not None:
-            predicted_value = float(model.predict(df_input)[0])
+            prediction = model.predict(df_input)[0]
+            predicted_value = float(prediction)
         else:
+            # Fallback estimation formula if pkl file is missing
             predicted_value = float(
-                df_input["Engine_Size"].iloc[0] * 5000 + 
-                df_input["Horsepower"].iloc[0] * 120 - 
-                df_input["Mileage"].iloc[0] * 0.05 + 22000
+                df_input["Engine_Size"].iloc[0] * 5200 + 
+                df_input["Horsepower"].iloc[0] * 130 - 
+                df_input["Mileage"].iloc[0] * 0.04 + 
+                (2026 - df_input["Year"].iloc[0]) * -900 + 22000
             )
 
-        mileage = float(data.get("Mileage", 45000))
+        # Metrics evaluation
+        mileage = float(data.get("Mileage", 32000))
         accident = data.get("Accident_History", "None")
         
+        risk_level = "Low" if accident == "None" else ("Moderate" if accident == "Minor" else "High")
+        dep_risk = "Low" if mileage < 30000 else ("Moderate" if mileage < 75000 else "High")
+        efficiency_tier = "A+" if float(data.get("Fuel_Efficiency", 16.8)) > 17.0 else "Standard"
+
+        recommendations = generate_insurance_recommendations(predicted_value, data)
+
         return jsonify({
             "success": True,
             "predicted_price": round(predicted_value, 2),
             "metrics": {
-                "efficiency": "A+" if float(data.get("Fuel_Efficiency", 15)) > 18 else "Standard",
-                "risk": "Low" if accident == "None" else ("Medium" if accident == "Minor" else "High"),
-                "depreciation": "Low" if mileage < 30000 else ("Moderate" if mileage < 80000 else "High")
+                "efficiency": efficiency_tier,
+                "risk": risk_level,
+                "depreciation": dep_risk
             },
-            "recommendations": generate_insurance_recommendations(predicted_value, data)
+            "recommendations": recommendations
         })
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+import os
+import pickle
+import numpy as np
+import pandas as pd
+from flask import Flask, request, jsonify, render_template_string
+
+app = Flask(__name__)
+
+# Model loading setup using the exact pickle filename
+MODEL_PATH = "RMR (1).pkl"
+model = None
+
+if os.path.exists(MODEL_PATH):
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        print(f"Model '{MODEL_PATH}' loaded successfully.")
+    except Exception as e:
+        print(f"Error loading pickle file: {e}")
+else:
+    print(f"Warning: '{MODEL_PATH}' not found in the root directory. Operating in preview mode.")
+
+# Feature mapping with categorical options as readable strings
+CATEGORICAL_OPTIONS = {
+    "Make": ["Toyota", "Honda", "Ford", "BMW", "Mercedes-Benz", "Audi", "Hyundai", "Nissan", "Chevrolet", "Kia"],
+    "Model": ["Sedan", "SUV", "Hatchback", "Coupe", "Truck", "Convertible", "Van", "Wagon"],
+    "Fuel_Type": ["Petrol", "Diesel", "Hybrid", "Electric", "CNG"],
+    "Transmission": ["Automatic", "Manual", "Semi-Automatic"],
+    "Accident_History": ["None", "Minor", "Major"],
+    "Service_History": ["Full", "Partial", "None"],
+    "Color": ["Black", "White", "Silver", "Blue", "Red", "Grey"],
+    "Body_Type": ["Sedan", "SUV", "Hatchback", "Coupe", "Pickup"],
+    "Drivetrain": ["FWD", "RWD", "AWD", "4WD"],
+    "Location": ["Urban", "Suburban", "Rural"]
+}
+
+DEFAULT_NUMERICALS = {
+    "Year": 2022,
+    "Engine_Size": 2.5,
+    "Mileage": 32000.0,
+    "Horsepower": 210.0,
+    "Torque": 280.0,
+    "Owners": 1,
+    "Fuel_Efficiency": 16.8
+}
+
+FEATURE_ORDER = [
+    "Make", "Model", "Year", "Fuel_Type", "Transmission", 
+    "Engine_Size", "Mileage", "Horsepower", "Torque", "Owners", 
+    "Accident_History", "Service_History", "Color", "Body_Type", 
+    "Drivetrain", "Fuel_Efficiency", "Location"
+]
+
+def generate_insurance_recommendations(price, vehicle_data):
+    """Generate luxury insurance coverage proposals based on vehicle profile."""
+    recommendations = []
+    
+    # Premium / Executive Tier
+    if price > 35000 or vehicle_data.get("Make") in ["BMW", "Mercedes-Benz", "Audi"]:
+        recommendations.append({
+            "title": "Titanium Sovereign Cover",
+            "tier": "PLATINUM",
+            "badge": "VIP Choice",
+            "price_est": f"${int(price * 0.042)}/yr",
+            "features": ["Zero Depreciation", "Full Engine & ECU Protection", "24/7 Global Concierge", "Guaranteed Invoice Value"],
+            "match": "99% Precision Match"
+        })
+    
+    # Comprehensive Core Tier
+    recommendations.append({
+        "title": "Apex Dynamic Shield",
+        "tier": "EXECUTIVE",
+        "badge": "Recommended",
+        "price_est": f"${int(price * 0.031)}/yr",
+        "features": ["All-Risk Collision Cover", "Third-Party Unlimited Liability", "Personal Driver Cover", "Cashless Repair Hubs"],
+        "match": "94% Optimal Match"
+    })
+    
+    # Essential Urban Tier
+    recommendations.append({
+        "title": "Metro Guard Select",
+        "tier": "ESSENTIAL",
+        "badge": "Smart Value",
+        "price_est": f"${int(price * 0.020)}/yr",
+        "features": ["Fire, Theft & Vandalism", "Emergency Towing & Key Lockout", "Basic Medical Assist"],
+        "match": "88% Match"
+    })
+    
+    return recommendations
+
+# Executive Dashboard Template with Glassmorphic Interface & Dynamic Themes
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA Motors — Executive Vehicle Intelligence Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Base Root Color Variables */
+        :root {
+            --bg-base: #0b0f19;
+            --bg-card: rgba(20, 27, 41, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.35);
+            --accent-hover: #4f46e5;
+            --text-heading: #f8fafc;
+            --text-sub: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --header-bg: rgba(11, 15, 25, 0.85);
+        }
+
+        /* Dynamic Preset Themes */
+        body.theme-titanium {
+            --bg-base: #0a0a0c;
+            --bg-card: rgba(22, 22, 26, 0.75);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --accent: #e2e8f0;
+            --accent-glow: rgba(226, 232, 240, 0.25);
+            --accent-hover: #ffffff;
+            --text-heading: #ffffff;
+            --text-sub: #94a3b8;
+            --input-bg: rgba(30, 30, 36, 0.6);
+        }
+
+        body.theme-cyber {
+            --bg-base: #070913;
+            --bg-card: rgba(14, 20, 38, 0.75);
+            --card-border: rgba(0, 240, 255, 0.2);
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.4);
+            --accent-hover: #70f3ff;
+            --text-heading: #ffffff;
+            --text-sub: #8ba1cd;
+            --input-bg: rgba(10, 15, 30, 0.7);
+        }
+
+        body.theme-gold {
+            --bg-base: #0f0d0a;
+            --bg-card: rgba(28, 24, 18, 0.75);
+            --card-border: rgba(212, 175, 55, 0.25);
+            --accent: #e5c158;
+            --accent-glow: rgba(229, 193, 88, 0.35);
+            --accent-hover: #f3d478;
+            --text-heading: #fffdf5;
+            --text-sub: #a89f91;
+            --input-bg: rgba(20, 17, 12, 0.7);
+        }
+
+        body.theme-emerald {
+            --bg-base: #06130e;
+            --bg-card: rgba(12, 33, 25, 0.75);
+            --card-border: rgba(16, 185, 129, 0.25);
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.4);
+            --accent-hover: #34d399;
+            --text-heading: #f0fdf4;
+            --text-sub: #86efac;
+            --input-bg: rgba(8, 24, 18, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-heading);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 20%, var(--accent-glow) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, var(--accent-glow) 0%, transparent 45%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar Navigation */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 40px;
+            background: var(--header-bg);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--card-border);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-heading);
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--accent);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+        }
+
+        .theme-label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .theme-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .theme-dot:hover {
+            transform: scale(1.25);
+        }
+
+        .theme-dot.active {
+            border-color: var(--text-heading);
+            transform: scale(1.1);
+        }
+
+        .dot-default { background: #6366f1; }
+        .dot-titanium { background: #e2e8f0; }
+        .dot-cyber { background: #00f0ff; }
+        .dot-gold { background: #e5c158; }
+        .dot-emerald { background: #10b981; }
+
+        /* Dashboard Container */
+        .wrapper {
+            margin-top: 90px;
+            padding: 40px;
+            max-width: 1550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-head {
+            margin-bottom: 30px;
+        }
+
+        .hero-head h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .hero-head p {
+            color: var(--text-sub);
+            font-size: 1rem;
+        }
+
+        /* Two Column Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .wrapper { padding: 20px; }
+            .header-bar { padding: 15px 20px; }
+        }
+
+        /* Glassmorphic Panel Design */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 14px;
+            color: var(--text-heading);
+        }
+
+        .panel-title i {
+            color: var(--accent);
+        }
+
+        /* Form Inputs Layout */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-field label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .custom-input {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-heading);
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .custom-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        /* Premium Animation Action Button */
+        .btn-holder {
+            margin-top: 25px;
+        }
+
+        .btn-spark {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: #ffffff;
+            border: none;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px var(--accent-glow);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-spark::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent,
+                rgba(255, 255, 255, 0.25),
+                transparent
+            );
+            transform: rotate(30deg);
+            transition: transform 0.8s ease;
+        }
+
+        .btn-spark:hover::after {
+            transform: translate(100%, 100%) rotate(30deg);
+        }
+
+        .btn-spark:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 12px 30px var(--accent-glow);
+        }
+
+        .btn-spark:active {
+            transform: translateY(1px);
+        }
+
+        /* Valuation Dashboard Card */
+        .val-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed var(--accent);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .val-sub {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .val-price {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 8px 0;
+            text-shadow: 0 0 25px var(--accent-glow);
+        }
+
+        .status-pill {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-heading);
+        }
+
+        /* Clean Analytics Telemetry Grid */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .m-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .m-val {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 4px;
+            color: var(--text-heading);
+        }
+
+        .m-lbl {
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+        }
+
+        /* Insurance Proposals Layout */
+        .plans-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .plan-card {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .plan-card:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .plan-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .plan-header h4 {
+            font-size: 0.98rem;
+            font-weight: 700;
+        }
+
+        .badge-tier {
+            background: var(--accent);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        .plan-meta {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        .plan-features {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .f-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-sub);
+        }
+    </style>
+</head>
+<body class="theme-default">
+
+    <!-- Header Navigation Bar -->
+    <header class="header-bar">
+        <div class="brand-box">
+            <div class="brand-icon">
+                <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <span>AURA MOTORS</span>
+        </div>
+        
+        <div class="theme-switcher">
+            <span class="theme-label">Theme Engine</span>
+            <div class="theme-dot dot-default active" onclick="switchTheme('theme-default', this)" title="Indigo Core"></div>
+            <div class="theme-dot dot-titanium" onclick="switchTheme('theme-titanium', this)" title="Titanium Dark"></div>
+            <div class="theme-dot dot-cyber" onclick="switchTheme('theme-cyber', this)" title="Cyber Neon"></div>
+            <div class="theme-dot dot-gold" onclick="switchTheme('theme-gold', this)" title="Royal Gold"></div>
+            <div class="theme-dot dot-emerald" onclick="switchTheme('theme-emerald', this)" title="Emerald Lux"></div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <div class="wrapper">
+        <div class="hero-head">
+            <h1>Executive Valuation & Telemetry</h1>
+            <p>Compute market appraisal via Random Forest regression and evaluate tailored insurance plans.</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Parameters Form -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <i class="fa-solid fa-sliders"></i> Vehicle Specifications
+                </div>
+                <form id="valuationForm">
+                    <div class="form-grid">
+                        {% for col in categorical_keys %}
+                        <div class="form-field">
+                            <label for="{{ col }}">{{ col.replace('_', ' ') }}</label>
+                            <select id="{{ col }}" name="{{ col }}" class="custom-input">
+                                {% for val in categorical_options[col] %}
+                                <option value="{{ val }}">{{ val }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endfor %}
+
+                        {% for col, val in default_numericals.items() %}
+                        <div class="form-field">
+                            <label for="{{ col }}">{{ col.replace('_', ' ') }}</label>
+                            <input type="number" step="any" id="{{ col }}" name="{{ col }}" value="{{ val }}" class="custom-input" required>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="btn-holder">
+                        <button type="submit" class="btn-spark" id="calcBtn">
+                            <i class="fa-solid fa-microchip"></i> Run AI Valuation
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Valuation Output & Insurance Analytics -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <i class="fa-solid fa-chart-pie"></i> Intelligence Output
+                </div>
+
+                <div class="val-card">
+                    <div class="val-sub">Estimated Market Value</div>
+                    <div class="val-price" id="valPrice">$0.00</div>
+                    <span class="status-pill" id="valStatus">Ready for Calculation</span>
+                </div>
+
+                <!-- Clean Metric Dashboard -->
+                <div class="metrics-row">
+                    <div class="m-box">
+                        <div class="m-lbl">Efficiency</div>
+                        <div class="m-val" id="mEfficiency">--</div>
+                    </div>
+                    <div class="m-box">
+                        <div class="m-lbl">Risk Rating</div>
+                        <div class="m-val" id="mRisk">--</div>
+                    </div>
+                    <div class="m-box">
+                        <div class="m-lbl">Depreciation</div>
+                        <div class="m-val" id="mDep">--</div>
+                    </div>
+                </div>
+
+                <!-- Insurance Plan Recommendations -->
+                <div class="panel-title" style="margin-top: 10px; border-bottom: none; margin-bottom: 12px;">
+                    <i class="fa-solid fa-shield"></i> Premium Coverage Plans
+                </div>
+                <div class="plans-list" id="insuranceContainer">
+                    <p style="color: var(--text-sub); text-align: center; padding: 20px;">
+                        Input vehicle metrics and execute valuation to view dynamic insurance proposals.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Switch dynamic CSS themes
+        function switchTheme(themeName, elem) {
+            document.body.className = themeName;
+            document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
+            elem.classList.add('active');
+        }
+
+        // AJAX Form Submission
+        document.getElementById('valuationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('calcBtn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Model...';
+
+            const formData = new FormData(this);
+            const payload = {};
+            formData.forEach((value, key) => { payload[key] = value; });
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+
+                if (res.success) {
+                    // Update main valuation UI
+                    document.getElementById('valPrice').innerText = '$' + res.predicted_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    document.getElementById('valStatus').innerText = 'Valuation Verified';
+
+                    // Update metrics
+                    document.getElementById('mEfficiency').innerText = res.metrics.efficiency;
+                    document.getElementById('mRisk').innerText = res.metrics.risk;
+                    document.getElementById('mDep').innerText = res.metrics.depreciation;
+
+                    // Render tailored insurance proposals
+                    const container = document.getElementById('insuranceContainer');
+                    container.innerHTML = '';
+
+                    res.recommendations.forEach(plan => {
+                        container.innerHTML += `
+                            <div class="plan-card" onclick="alert('Selected Coverage: ${plan.title}')">
+                                <div>
+                                    <div class="plan-header">
+                                        <h4>${plan.title}</h4>
+                                        <span class="badge-tier">${plan.badge}</span>
+                                    </div>
+                                    <div class="plan-meta">${plan.match} • Estimated Premium: <strong>${plan.price_est}</strong></div>
+                                    <div class="plan-features">
+                                        ${plan.features.map(f => `<span class="f-tag">${f}</span>`).join('')}
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right" style="color: var(--text-sub);"></i>
+                            </div>
+                        `;
+                    });
+                } else {
+                    alert('Error: ' + res.error);
+                }
+            } catch (err) {
+                alert('Connection error with Flask server.');
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-microchip"></i> Run AI Valuation';
+            }
+        });
+    </script>
+</body>
+</html>
+"""
+
+@app.route("/")
+def index():
+    return render_template_string(
+        HTML_TEMPLATE,
+        categorical_keys=list(CATEGORICAL_OPTIONS.keys()),
+        categorical_options=CATEGORICAL_OPTIONS,
+        default_numericals=DEFAULT_NUMERICALS
+    )
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        data = request.get_json()
+        
+        # Build single-row DataFrame with categorical columns retained as readable strings
+        input_data = {}
+        for col in FEATURE_ORDER:
+            if col in CATEGORICAL_OPTIONS:
+                input_data[col] = [str(data.get(col, CATEGORICAL_OPTIONS[col][0]))]
+            else:
+                input_data[col] = [float(data.get(col, DEFAULT_NUMERICALS.get(col, 0)))]
+
+        df_input = pd.DataFrame(input_data)
+
+        # Run Random Forest Model prediction
+        if model is not None:
+            prediction = model.predict(df_input)[0]
+            predicted_value = float(prediction)
+        else:
+            # Fallback estimation formula if pkl file is missing
+            predicted_value = float(
+                df_input["Engine_Size"].iloc[0] * 5200 + 
+                df_input["Horsepower"].iloc[0] * 130 - 
+                df_input["Mileage"].iloc[0] * 0.04 + 
+                (2026 - df_input["Year"].iloc[0]) * -900 + 22000
+            )
+
+        # Metrics evaluation
+        mileage = float(data.get("Mileage", 32000))
+        accident = data.get("Accident_History", "None")
+        
+        risk_level = "Low" if accident == "None" else ("Moderate" if accident == "Minor" else "High")
+        dep_risk = "Low" if mileage < 30000 else ("Moderate" if mileage < 75000 else "High")
+        efficiency_tier = "A+" if float(data.get("Fuel_Efficiency", 16.8)) > 17.0 else "Standard"
+
+        recommendations = generate_insurance_recommendations(predicted_value, data)
+
+        return jsonify({
+            "success": True,
+            "predicted_price": round(predicted_value, 2),
+            "metrics": {
+                "efficiency": efficiency_tier,
+                "risk": risk_level,
+                "depreciation": dep_risk
+            },
+            "recommendations": recommendations
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
